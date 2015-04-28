@@ -1,6 +1,6 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
-	this.server_url = 'http://localhost:8100/';
+	this.server_url = 'http://107.167.183.96:8100/';
 	
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -36,7 +36,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.signinup = function(username, password, uuid, $scope){
-		var url = "http://localhost:5000/signinup?callback=JSON_CALLBACK&email="+username+"&password="+password+"&uuid="+uuid;
+		var url = "http://107.167.183.96:5000/signinup?callback=JSON_CALLBACK&email="+username+"&password="+password+"&uuid="+uuid;
 		var request = $http.jsonp(url);		
 		console.log(url);
 		request.success(function(data) {
@@ -49,7 +49,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.init = function(callback) {
-		var url = "http://localhost:5000/init?callback=JSON_CALLBACK&token="+self.token;
+		var url = "http://107.167.183.96:5000/init?callback=JSON_CALLBACK&token="+self.token;
 		var request = $http.jsonp(url);		
 		console.log(url);
 		request.success(function(data) {
@@ -59,7 +59,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				$rootScope.fav_list = data.fav_list;
 				
 				// this is notify service init
-				socket = io("http://localhost:5000/");
+				socket = io("http://107.167.183.96:5000/");
 				
 				socket.emit('init', self.token);
 				socket.on('message', function(msg){
@@ -136,7 +136,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			list_channels+="&channels[]="+channels[i];
 			i++;
 		}
-		var url = "http://localhost:5000/get_post_list?callback=JSON_CALLBACK" + list_channels + "&page=" + page;
+		var url = "http://107.167.183.96:5000/get_post_list?callback=JSON_CALLBACK" + list_channels + "&page=" + page;
 		var request = $http.jsonp(url);		
 		request.success(function(data) {
 			_updatePostList(data.posts,false);
@@ -155,7 +155,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	this.get_latest_post_list = get_latest_post_list;
 	
 	this.init_radar_here = function(token, lon, lat) {	// here
-		var url = "http://localhost:5000/init_radar_here?callback=JSON_CALLBACK"+"&token="+token+"&lon="+lon+"&lat="+lat;
+		var url = "http://107.167.183.96:5000/init_radar_here?callback=JSON_CALLBACK"+"&token="+token+"&lon="+lon+"&lat="+lat;
 		var request = $http.jsonp(url);		
 		 
 		request.success(function(data) {
@@ -172,7 +172,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 
 	this.init_radar_fovourite = function(token, id) {	// favourite
-		var url = "http://localhost:5000/init_radar_fovourite?callback=JSON_CALLBACK"+"&token="+token+"&id="+id;
+		var url = "http://107.167.183.96:5000/init_radar_fovourite?callback=JSON_CALLBACK"+"&token="+token+"&id="+id;
 		var request = $http.jsonp(url);		
 		 
 		request.success(function(data) {
@@ -188,7 +188,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 })
 .service('nexbackend', function($rootScope, $http, config){
 	this.get_from_backend = function(callback) {
-		var url = "http://localhost:5000/init?callback=JSON_CALLBACK&token="+self.token;
+		var url = "http://107.167.183.96:5000/init?callback=JSON_CALLBACK&token="+self.token;
 		var request = $http.jsonp(url);		
 		console.log(url);
 		request.success(function(data) {
@@ -203,7 +203,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.get_post_comment_list = function(callback) {
-		var url = "http://localhost:5000/init?callback=JSON_CALLBACK&token="+self.token;
+		var url = "http://107.167.183.96:5000/init?callback=JSON_CALLBACK&token="+self.token;
 		var request = $http.jsonp(url);		
 		console.log(url);
 		request.success(function(data) {

@@ -229,7 +229,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 ****************************************/
 .controller('m_DetailCtrl', function($scope, $state, $stateParams, $http, login) {
 	console.log();
-	var url = "http://localhost:5000/get_post_detail?callback=JSON_CALLBACK&id="+$stateParams.detailId+"&token="+login.token;
+	var url = "http://107.167.183.96:5000/get_post_detail?callback=JSON_CALLBACK&id="+$stateParams.detailId+"&token="+login.token;
 	var request = $http.jsonp(url);		
 	console.log(url);
 	request.success(function(data) {
@@ -238,7 +238,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			$scope.myitem = data.post_detail;
 			console.log(JSON.stringify($scope.myitem));
 			
-			url = "http://localhost:5000/get_post_comment_list?callback=JSON_CALLBACK&id="+$stateParams.detailId+"&token="+login.token;
+			url = "http://107.167.183.96:5000/get_post_comment_list?callback=JSON_CALLBACK&id="+$stateParams.detailId+"&token="+login.token;
 			request = $http.jsonp(url);	
 			request.success(function(data1) {
 				if(data1.retcode === 0) {

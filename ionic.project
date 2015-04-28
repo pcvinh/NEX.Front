@@ -4,23 +4,23 @@
     "proxies": [
     {
       "path": "/create_post",
-      "proxyUrl": "http://localhost:5000/create_post"
+      "proxyUrl": "http://107.167.183.96:5000/create_post"
     },
 	{
       "path": "/add_radar_favourite",
-      "proxyUrl": "http://localhost:5000/add_radar_favourite"
+      "proxyUrl": "http://107.167.183.96:5000/add_radar_favourite"
     },
 	{
       "path": "/create_post_like",
-      "proxyUrl": "http://localhost:5000/create_post_like"
+      "proxyUrl": "http://107.167.183.96:5000/create_post_like"
     },
 	{
       "path": "/create_post_comment",
-      "proxyUrl": "http://localhost:5000/create_post_comment"
+      "proxyUrl": "http://107.167.183.96:5000/create_post_comment"
     },
 	{
       "path": "/create_post_relay",
-      "proxyUrl": "http://localhost:5000/create_post_relay"
+      "proxyUrl": "http://107.167.183.96:5000/create_post_relay"
     }
   ]
 }
