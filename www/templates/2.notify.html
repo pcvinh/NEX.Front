@@ -1,0 +1,25 @@
+<ion-view title="Notify">
+    <ion-nav-bar class="bar-positive nav-title-slide-ios7">
+      <ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
+        Back
+      </ion-nav-back-button>
+    </ion-nav-bar>
+	
+  <ion-content class="has-header">
+      <ion-list>
+        <div ng-repeat="group in groups">
+          <ion-item class="item-stable"
+                    ng-click="toggleGroup(group)"
+                    ng-class="{active: isGroupShown(group)}">
+              <i class="icon" ng-class="isGroupShown(group) ? 'ion-minus' : 'ion-plus'"></i>
+            &nbsp;
+            Group {{group.name}}
+          </ion-item>
+          
+			<ion-item class="item-accordion item-avatar" href="#" ng-repeat="item in group.items"
+                    ng-show="isGroupShown(group)" notify-item-type="{{group.type}}">
+			</ion-item>
+        </div>
+      </ion-list>
+  </ion-content>
+</ion-view>
