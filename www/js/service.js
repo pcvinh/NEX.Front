@@ -1,6 +1,7 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
-	this.is_localhost = true;
+	this.is_localhost = false;
+	this.is_device = true;
 	this.nex_server_ip = (this.is_localhost == false) ? 'http://107.167.183.96:5000/' : 'http://127.0.0.1:5000/';
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -68,7 +69,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	this.register_basic = function(id, avatarURI, nickname, callback){ // upload image		
 		if(config.is_localhost || typeof avatarURI == 'undefined') {
 			console.log('signup_basic. id = ' + id + ' nickname = ' + nickname );
-			var url = (config.is_localhost) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
+			var url = (!config.is_device) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
 			$http({
 			  method  : 'POST',
 			  url     : url,
@@ -89,7 +90,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
 				  .then(function(data) {
 						if(data.retcod == 0) {
-							var url = (config.is_localhost) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
+							var url = (!config.is_device) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
 							$http({
 							  method  : 'POST',
 							  url     : url,
@@ -156,7 +157,9 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	this.logout = function() {
 		$window.localStorage.removeItem(key);
 		main.clear_radar();
+		main.clear();
 		notification.stop();
+		notification.clear();
 	}
 
 })
@@ -173,6 +176,12 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	self.list = [];	
 	self.fav_list = [];
 	self.current_channels; 	
+	
+	this.clear = function() {
+		self.list = [];	
+		self.fav_list = [];
+		self.current_channels = null;
+	}
 	
 	this.update_fav_list = function(list) {
 		for (var i in list) {
@@ -299,7 +308,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.addFavourite = function(name, token, callback) {
-		var url = (config.is_localhost) ? '/create_radar_favourite' : config.nex_server_ip + 'create_radar_favourite';
+		var url = (!config.is_device) ? '/create_radar_favourite' : config.nex_server_ip + 'create_radar_favourite';
 		$http({
 			  method  : 'POST',
 			  url     : url,
@@ -319,7 +328,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.createPost = function(message, token, callback) {
-		var url = (config.is_localhost) ? '/create_post' : config.nex_server_ip + 'create_post';
+		var url = (!config.is_device) ? '/create_post' : config.nex_server_ip + 'create_post';
 		$http({
 			method  : 'POST',
 			url     : url,
@@ -337,7 +346,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.createPostLike = function(id, token, callback) {
-		var url = (config.is_localhost) ? '/create_post_like' : config.nex_server_ip + 'create_post_like';
+		var url = (!config.is_device) ? '/create_post_like' : config.nex_server_ip + 'create_post_like';
 		$http({
 		method  : 'POST',
 		url     : url,
@@ -355,7 +364,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.createPostRelay = function(id, token, callback) {
-		var url = (config.is_localhost) ? '/create_post_relay' : config.nex_server_ip + 'create_post_relay';
+		var url = (!config.is_device) ? '/create_post_relay' : config.nex_server_ip + 'create_post_relay';
 		$http({
 		method  : 'POST',
 		url     : url,
@@ -373,7 +382,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	this.createPostComment = function(id, comment, token, callback) {
-		var url = (config.is_localhost) ? '/create_post_comment' : config.nex_server_ip + 'create_post_comment';		
+		var url = (!config.is_device) ? '/create_post_comment' : config.nex_server_ip + 'create_post_comment';		
 		$http({
 		method  : 'POST',
 		url     : url,
@@ -415,6 +424,10 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	var self = this;
 	var socket;
 	self.list = [];
+	
+	this.clear = function() {
+		self.list = [];
+	}
 	
 	function _notification_list(token) {
 		var url = config.nex_server_ip+"notification_list?callback=JSON_CALLBACK&token="+token;
