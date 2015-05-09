@@ -22,8 +22,8 @@
 	<!--script src="lib/ionic.headerShrink.js"></script-->
 	
 	<script src="lib/pubnub/pubnub-angular.js"></script>
-	
     <!-- cordova script (this will be a 404 during development) -->
+	<script src="lib/ngCordova/dist/ng-cordova.js"></script>
     <script src="cordova.js"></script>
 
     <!-- your app's js -->
@@ -32,7 +32,9 @@
 	<script src="js/service.js"></script>
 	<script src="js/directive.js"></script>
 		
-	<script src="http://107.167.183.96:5000/socket.io/socket.io.js"></script>
+	<!--script src="http://107.167.183.96:5000/socket.io/socket.io.js"></script-->
+	<script src="http://localhost:5000/socket.io/socket.io.js"></script>
+	
 
   </head>
   <body ng-app="NEX" animation="slide-left-right-ios7">

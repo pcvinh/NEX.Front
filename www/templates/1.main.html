@@ -20,10 +20,11 @@
 		</ion-nav-buttons>
     <ion-content class="padding ion-shrink-content" header-shrink scroll-event-interval="5" has-bouncing="false">
 	<div style="height: 80px;"></div>
-	<div class="list card" ng-repeat="myitem in PostList track by myitem.id">
+	<!--div class="list card" ng-repeat="myitem in PostList track by myitem.id"-->
+	<div class="list card" ng-repeat="myitem in PostList | orderBy : '-id'">
 	 <div class="item item-avatar">
-		<img src="http://107.167.183.96:5000/avatar/{{myitem.owner.avatar}}">
-		<h2>{{myitem.owner.name}}</h2>
+		<img ng-src="{{gui_get_avatar_path(myitem.owner.avatar)}}">
+		<h2>{{myitem.owner.nickname}}</h2>
 		<p>{{myitem.metadata.create_time}}</p>
 	  </div>
 	  <div class="item item-body">

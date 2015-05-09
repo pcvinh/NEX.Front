@@ -1,7 +1,7 @@
 angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.services'])
 
-.controller('SignInCtrl', function($scope, $state, login) {
-	if(login.checklogin()) {
+.controller('SignInCtrl', function($scope, $state, login, main, notification) {
+	if(login.checklogin() && login.is_init) {
 		$state.go('tab.main');
 	} 
 	
@@ -11,10 +11,69 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		$scope.$on('loginevent', function(event, data) { 
 			if( data.retcod === 0) {
 				console.log("login success");
-				$state.go('tab.main');
+				// init 
+				login.init(function() {
+					$state.go('tab.main');
+				});
+			} else if( data.retcod === 1){
+				$state.go('register_basic',{userId: data.id});
 			} else {
+				// need to show pop up or show somewhere that login false due to reason.
 				console.log("login false");
 			}
+		});
+	};
+})
+.controller('RegisterBasicCtrl', function($scope, $state, $stateParams, $http, $cordovaCamera, login) { // this will have the upload picture. 
+	var avatarURI;
+	
+	$scope.choose_image = function() {
+		document.addEventListener("deviceready", function () {
+			var options = {
+			  quality: 50,
+			  destinationType: Camera.DestinationType.FILE_URI,
+			  sourceType: Camera.PictureSourceType.CAMERA,
+			  allowEdit: true,
+			  encodingType: Camera.EncodingType.JPEG,
+			  targetWidth: 128,
+			  targetHeight: 128,
+			  popoverOptions: CameraPopoverOptions,
+			  saveToPhotoAlbum: false
+			};
+
+			$cordovaCamera.getPicture(options).then(function(imageURI) {
+			  var image = document.getElementById('myImage');
+			  image.src = imageURI;
+			  avatarURI = imageData;
+			}, function(err) {
+			  // error
+			});
+	  }, false);
+	}
+	
+	$scope.register_basic = function(nickname) {
+		console.log('register_basic $scope.nickname = ' + nickname);
+		if(typeof nickname == 'undefine' || nickname == null || nickname == '') return;
+		
+		login.register_basic($stateParams.userId, avatarURI, nickname, function (data) {
+			console.log("register success");
+				// init 
+			login.init(function() {
+				$state.go('tab.main');
+			});
+		});
+	}	
+	
+	$scope.single = function(image) {
+		var formData = new FormData();
+		formData.append('image', image, image.name);
+
+		$http.post('upload', formData, {
+			headers: { 'Content-Type': false },
+			transformRequest: angular.identity
+		}).success(function(result) {
+			$scope.uploadedImgSrc = result.src;
+			$scope.sizeInBytes = result.size;
 		});
 	};
 })
@@ -36,42 +95,20 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 4. _private_functions
 - _serialize
 ****************************************/
-.controller('MainCtrl', function($rootScope, $scope, $http,  $location, $ionicModal, $state, login, radar) {
+.controller('MainCtrl', function($rootScope, $scope, $http,  $location, $ionicModal, $state, $cordovaGeolocation, login, main, config) {
 	//RardarList.current_location_radar_init();
-	$scope.PostList =  radar.list;
-	$scope.FavouriteList = [];
-	
-	/*  private functions  */ 
-	function _serialize(obj) {
-		var str = [];
-		for(var p in obj){
-			console.log(p + ":" +(Array.isArray( obj[p])));
-			if (Array.isArray( obj[p])) {
-				for(var i in obj[p])
-					str.push(encodeURIComponent(p) + "[]=" + encodeURIComponent(obj[p][i]));
-			} else {
-				str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-			}
-		}
-		return str.join("&");
-	}
-	
-	/*  init function  */ 
+
+	/***  init function  ***/ 
 	function init() {
 		if(!login.checklogin()) {
 			$state.go('signin');
-		} else if(!login.is_init){
-			login.init(function(fav_list){
-				$scope.FavouriteList = $rootScope.fav_list;
-				radar.init_radar_here(login.token, 1.3, 103.8);
-				console.log("init success");
-			});
 		} else {
-			//radar.init_radar_here(login.token, 1.3, 103.8);
-			$scope.FavouriteList = $rootScope.fav_list;
+			//main.init_radar_here(login.token, 1.3, 103.8);
+			$scope.PostList =  main.list;
+			$scope.FavouriteList = main.fav_list;
 		}
 		
-		/*  build modal  */ 
+		/* modal popup */ 
 		$ionicModal.fromTemplateUrl('popup-add-favourite.html', {
 			scope: $scope,
 			animation: 'slide-in-left'
@@ -87,7 +124,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		});
 	}
 	
-	/*  define GUI builder function  */ 
+	/***  define GUI builder function  ***/ 
 	$scope.gui_favourite_icon = function(fav) {
 		if(fav.n === 'Home') {
 			return "ion-home";
@@ -98,18 +135,37 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		}
 	}	
 
+	$scope.gui_get_avatar_path = function(filename) {
+		return config.nex_server_ip + "avatar/" + filename;
+	}
 	
-	/* define interactive (button click) */ 
-	// switch radar
+	/*** define interactive (button click) ***/ 
+	
+	function _get_location(callback) {
+		var posOptions = {timeout: 10000, enableHighAccuracy: false};
+		$cordovaGeolocation
+		.getCurrentPosition(posOptions)
+		.then(function (position) {
+		  var lat  = position.coords.latitude
+		  var long = position.coords.longitude
+		  callback(lat,long);
+		}, function(err) {
+		  // error
+		});
+	}
+	
 	$scope.clickRadarHere = function() {
-		radar.clear();
-		radar.init_radar_here(login.token, 1.3, 103.8);
+		main.clear_radar();
+		_get_location(function(lat, long) {
+			console.log("init radar here for location ("+lat+" . "+long+")");
+			main.init_radar_here(login.token, lat, long);
+		});
 	}
 
 	$scope.clickRadarFavourite = function(id) {
-		console.log("Radar Favourite chose: " + id);
-		radar.clear();
-		radar.init_radar_fovourite(login.token, id);
+		console.log("main Favourite chose: " + id);
+		main.clear_radar();
+		main.init_radar_fovourite(login.token, id);
 	}
 		
 	$scope.clickRadarMap = function() {
@@ -127,24 +183,10 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 
 	
 	$scope._click_addFavourite = function(name) {
-		$http({
-			  method  : 'POST',
-			  url     : '/create_radar_favourite',
-				/*transformRequest: function(obj) {
-					var str = [];
-					for(var p in obj)
-					if (obj.hasOwnProperty(p)) {
-					  str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-					}
-					return str.join("&");
-				},*/
-			  data    : _serialize({ Token: login.token, Channels: radar.current_channels, Name : name}),  // pass in data as strings	
-			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-			 }).success(function(data) {
-					$rootScope.fav_list.push(data.fav);
-					$scope.add_favourite_modal.hide();
-			  });
-			  
+		main.addFavourite(name, login.token, function(data) {
+			main.fav_list.push(data.fav);
+			$scope.add_favourite_modal.hide();
+		});
 	}
 	
 	$scope.clickCreateNew = function() {
@@ -152,21 +194,9 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	}
 	
 	$scope._click_createPost = function(message) {
-		$http({
-			  method  : 'POST',
-			  url     : '/create_post',
-				transformRequest: function(obj) {
-					var str = [];
-					for(var p in obj)
-					str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-					return str.join("&");
-				},
-			  data    : { Channels: radar.current_channels[0], Title : message.Title, Content: message.Content, Token: login.token},  // pass in data as strings	
-			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-			 }).success(function(data) {
-					$scope.create_post_modal.hide();
-			  });
-
+		main.createPost(message, login.token,function(data) {
+			$scope.create_post_modal.hide();
+		});
 	}
 	
 	$scope._click_closeCreateNewModal = function() {
@@ -174,18 +204,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	};
 	
 	$scope._click_Like = function(id, index) {
-		$http({
-		method  : 'POST',
-		url     : '/create_post_like',
-		transformRequest: function(obj) {
-			var str = [];
-			for(var p in obj)
-			str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-			return str.join("&");
-		},
-		data    : { id: id, Token: login.token},  // pass in data as strings	
-		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-		}).success(function(data) {
+		main.createPostLike(id, login.token, function(data) {
 			console.log($scope.PostList[index]);
 			$scope.PostList[index].i.l += 1;
 			//$scope.update();
@@ -198,18 +217,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 
 	
 	$scope._click_Relay = function(id, index) {
-		$http({
-		method  : 'POST',
-		url     : '/create_post_relay',
-		transformRequest: function(obj) {
-			var str = [];
-			for(var p in obj)
-			str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-			return str.join("&");
-		},
-		data    : { channel: radar.current_channels[0], id: id, Token: login.token},  // pass in data as strings	
-		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-		}).success(function(data) {
+		main.createPostRelay(id, login.token,function(data) {
 			console.log($scope.PostList[index]);
 			$scope.PostList[index].i.r += 1;
 		});
@@ -227,81 +235,43 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 4. _private_functions
 
 ****************************************/
-.controller('m_DetailCtrl', function($scope, $state, $stateParams, $http, login) {
-	console.log();
-	var url = "http://107.167.183.96:5000/get_post_detail?callback=JSON_CALLBACK&id="+$stateParams.detailId+"&token="+login.token;
-	var request = $http.jsonp(url);		
-	console.log(url);
-	request.success(function(data) {
-		console.log(JSON.stringify(data));
-		if(data.retcode === 0) {
-			$scope.myitem = data.post_detail;
-			console.log(JSON.stringify($scope.myitem));
-			
-			url = "http://107.167.183.96:5000/get_post_comment_list?callback=JSON_CALLBACK&id="+$stateParams.detailId+"&token="+login.token;
-			request = $http.jsonp(url);	
-			request.success(function(data1) {
-				if(data1.retcode === 0) {
-					$scope.comments = data1.comments;
-				}
-			});
-		}
-	});
+.controller('m_DetailCtrl', function($scope, $state, $stateParams, $http, config, login, main) {
 	
-	$scope._click_Like = function() {
-		$http({
-		method  : 'POST',
-		url     : '/create_post_like',
-		transformRequest: function(obj) {
-			var str = [];
-			for(var p in obj)
-			str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-			return str.join("&");
-		},
-		data    : { id: id, Token: login.token},  // pass in data as strings	
-		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-		}).success(function(data) {
+	function init() {
+		if(!login.checklogin()) {
+			$state.go('signin');
+		} else {
+			main.init_post_detail($stateParams.detailId, login.token, $scope);
+		}
+	}
+	
+	$scope.gui_get_avatar_path = function(filename) {
+		console.log(filename);
+		return config.nex_server_ip + "avatar/" + filename;
+	}
+	
+	$scope._click_Like = function(id) {
+		main.createPostLike(id, login.token, function(data) {
 			$scope.myitem.i.l += 1;
-			//$scope.update();
 		});
 	};
 	
-	$scope._click_Relay = function() {
-		$http({
-		method  : 'POST',
-		url     : '/create_post_relay',
-		transformRequest: function(obj) {
-			var str = [];
-			for(var p in obj)
-			str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-			return str.join("&");
-		},
-		data    : { channel: radar.current_channels[0], id: id, Token: login.token},  // pass in data as strings	
-		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-		}).success(function(data) {
+	$scope._click_Relay = function(id) {
+		main.createPostRelay(id, login.token, function(data) {
 			$scope.myitem.i.r += 1;
 		});
 	};
 	
 	$scope._click_createComment = function(comment) { // this is to submit comment
-		$http({
-		method  : 'POST',
-		url     : '/create_post_comment',
-		transformRequest: function(obj) {
-			var str = [];
-			for(var p in obj)
-			str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
-			return str.join("&");
-		},
-		data    : { id: $stateParams.detailId, Token: login.token, content : comment.Content},  // pass in data as strings	
-		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-		}).success(function(data) {
+		main.createPostComment($stateParams.detailId, comment, login.token, function(data) {
 			console.log(data);
-			var temp = {"owner" : {"avatar" : "vinh.jpg", "name" : "Phan Cao Vinh"}, "content" : comment.Content};
+			var temp = {"owner" : {"avatar" : data.avatar, "nickname" : data.nickname}, "content" : data.content};
 			$scope.comments.unshift(temp);
 			comment.Content = "";
-		});
+		})
 	};
+	
+	init();
 })
 .controller('m_CommentCtrl', function($scope, $state) {
 
@@ -314,42 +284,50 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 })
 
 ///////////////////////////////////////////////////
-.controller('NotifyCtrl', function($scope, $state) {
-	$scope.groups = [];
-
-	$scope.groups[0] = {
-	  name: 'Request waiting for acceptance',
-	  type:0,
-	  items: [{'owner' : {'id':1,'name':'Phan Cao Vinh', 'avatar':'Vinh.jpg'},'notify' : 'to be <strong>friend</strong>'}]
-	};
+.controller('NotifyCtrl', function($rootScope, $scope, $location, $state, login, notification, config) {
 	
-	$scope.groups[1] = {
-	  name: 'Notification',
-	  type:1,
-	  items: []
-	};
+	// $scope.groups = [];
+	// $scope.groups[0] = {
+	  // name: 'Request waiting for acceptance',
+	  // type:0,
+	  // items: [{'owner' : {'id':1,'name':'Phan Cao Vinh', 'avatar':'Vinh.jpg'},'notify' : 'to be <strong>friend</strong>'}]
+	// };	
+	// $scope.groups[1] = {
+	  // name: 'Notification',
+	  // type:1,
+	  // items: []
+	// };
+	// /***** Accordion list of notify ***** 
+	// * if given group is the selected group, deselect it
+	// * else, select the given group
+	// *************************************/
+	// $scope.toggleGroup = function(group) {
+		// if ($scope.isGroupShown(group)) {
+		  // $scope.shownGroup = null;
+		// } else {
+		  // $scope.shownGroup = group;
+		// }
+	// };
+	// $scope.isGroupShown = function(group) {
+		// return $scope.shownGroup === group;
+	// };
 	
-	$scope.groups[2] = {
-	  name: 'Invitation',
-	  type:2,
-	  items: []
-	};
-
-
-	/*
-	* if given group is the selected group, deselect it
-	* else, select the given group
-	*/
-	$scope.toggleGroup = function(group) {
-		if ($scope.isGroupShown(group)) {
-		  $scope.shownGroup = null;
+	/***  init function  ***/ 
+	function init() {
+		if(!login.checklogin()) {
+			$state.go('signin');
 		} else {
-		  $scope.shownGroup = group;
+			console.log("Notification state with list =  " +  JSON.stringify(notification.list));
+			$scope.list =  notification.list;
 		}
-	};
-	$scope.isGroupShown = function(group) {
-		return $scope.shownGroup === group;
-	};
+	}
+	
+	$scope.gui_get_avatar_path = function(filename) {
+		return config.nex_server_ip + "avatar/" + filename;
+	}
+	
+	init();
+	
 })
 .controller('n_DetailCtrl', function($scope, $state) {
 
@@ -365,34 +343,11 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 })
 
 ///////////////////////////////////////////////////
-.controller('MeCtrl', function($scope, $stateParams) {
-    $scope.data = {
-    showDelete: false
-  };
-  
-  $scope.edit = function(item) {
-    alert('Edit Item: ' + item.id);
-  };
-  $scope.share = function(item) {
-    alert('Share Item: ' + item.id);
-  };
-  
-  $scope.moveItem = function(item, fromIndex, toIndex) {
-    $scope.items.splice(fromIndex, 1);
-    $scope.items.splice(toIndex, 0, item);
-  };
-  
-  $scope.onItemDelete = function(item) {
-    $scope.items.splice($scope.items.indexOf(item), 1);
-  };
-  
-  $scope.items = [
-    { id: 0 },
-    { id: 1 },
-    { id: 2 },
-    { id: 3 }
-  ];
-  
+.controller('MeCtrl', function($scope, $state, $stateParams, me, login) {  
+	$scope.logout = function() {
+		login.logout();
+		$state.go('signin');
+	};  
 })
 .controller('me_DetailCtrl', function($scope, $state) {
 

@@ -3,8 +3,8 @@
 // angular.module is a global place for creating, registering and retrieving Angular modules
 // 'starter' is the name of this angular module example (also set in a <body> attribute in index.html)
 // the 2nd parameter is an array of 'requires'
-angular.module('NEX', ['ionic', 'pubnub.angular.service', 'nexengine.controllers', 'nexengine.services', 'nexengine.directives'])
-.run(function($ionicPlatform, PubNub, $state, login, radar) {
+angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine.controllers', 'nexengine.services', 'nexengine.directives'])
+.run(function($ionicPlatform, PubNub, $state, config, login, main, notification) {
 	$ionicPlatform.ready(function() {
 		// Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
 		// for form inputs)
@@ -24,7 +24,11 @@ angular.module('NEX', ['ionic', 'pubnub.angular.service', 'nexengine.controllers
 	});
 	
 	if(login.checklogin()) {
-		$state.go('tab.main');
+		// init 
+		login.init(function() {
+			$state.go('tab.main');
+		});
+		
 	} else {
 		$state.go('signin');
 	}
@@ -43,6 +47,12 @@ angular.module('NEX', ['ionic', 'pubnub.angular.service', 'nexengine.controllers
       templateUrl: 'templates/0.sign-in.html',
       controller: 'SignInCtrl'
     })
+	.state('register_basic', {
+      url: '/register-basic/:userId',
+      templateUrl: 'templates/0.1.register.basic.html',
+      controller: 'RegisterBasicCtrl'
+    })
+	
     // setup an abstract state for the tabs directive
     .state('tab', {
       url: "/tab",

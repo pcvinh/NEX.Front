@@ -1,33 +1,50 @@
 <ion-view title="Dashboard">
-    <ion-nav-bar class="bar-stable nav-title-slide-ios7">
-		<button class="button button-icon icon ion-ios7-minus-outline" 
-          ng-click="data.showDelete = !data.showDelete; data.showReorder = false">
-		</button>
+    <ion-nav-bar class="bar-positive nav-title-slide-ios7">
+		<ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
+			Back
+		</ion-nav-back-button>
     </ion-nav-bar>
-  <ion-content class="padding">
+  <ion-content class="">
       <!-- The list directive is great, but be sure to also checkout the collection repeat directive when scrolling through large lists -->
       
-      <ion-list show-delete="data.showDelete" show-reorder="data.showReorder">
+	<div class="list">
 
-        <ion-item ng-repeat="item in items" 
-                  item="item"
-                  href="#/tab/main/{{item.id}}">
-          Item {{ item.id }}
-          <ion-delete-button class="ion-minus-circled" 
-                             ng-click="onItemDelete(item)">
-          </ion-delete-button>
-          <ion-option-button class="button-assertive"
-                             ng-click="edit(item)">
-            Edit
-          </ion-option-button>
-          <ion-option-button class="button-calm"
-                             ng-click="share(item)">
-            Share
-          </ion-option-button>
-          <ion-reorder-button class="ion-navicon" on-reorder="moveItem(item, $fromIndex, $toIndex)"></ion-reorder-button>
-        </ion-item>
+	  <a class="item item-icon-left" href="#">
+		<i class="icon ion-compose"></i>
+		My Post
+		<span class="badge badge-assertive">100</span>
+	  </a>
 
-      </ion-list>
+	  <a class="item item-icon-left item-icon-right" href="#">
+		<i class="icon ion-clock"></i>
+		Activities History
+		<i class="icon ion-trash-b"></i>
+	  </a>
+	<div class="item item-divider">
+		Others
+	</div>
+	  <a class="item item-icon-left" href="#">
+		<i class="icon ion-gear-a"></i>
+		Settings
+		<span class="item-note">
+		  Profile, security settings
+		</span>
+	  </a>
+	  <a class="item item-icon-left" href="#">
+		<i class="icon ion-information"></i>
+		Help
+	  </a>
+	   <a class="item item-icon-left" href="#">
+		<i class="icon ion-clipboard"></i>
+		Policy
+	  </a>
+	  	  
+	  <a class="item item-icon-left" ng-click="logout()">
+		<i class="icon ion-log-out"></i>
+		Log Out
+	  </a>
+
+	</div>
   </ion-content>
 </ion-view>
 

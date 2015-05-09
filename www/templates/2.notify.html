@@ -7,7 +7,7 @@
 	
   <ion-content class="has-header">
       <ion-list>
-        <div ng-repeat="group in groups">
+        <!--div ng-repeat="group in groups">
           <ion-item class="item-stable"
                     ng-click="toggleGroup(group)"
                     ng-class="{active: isGroupShown(group)}">
@@ -19,7 +19,15 @@
 			<ion-item class="item-accordion item-avatar" href="#" ng-repeat="item in group.items"
                     ng-show="isGroupShown(group)" notify-item-type="{{group.type}}">
 			</ion-item>
-        </div>
+        </div-->
+
+  <ion-item class="item-avatar" ng-repeat="item in list" href="#">
+	<img ng-src="{{gui_get_avatar_path(item.s.avatar)}}">
+    <a href="#{{item.s.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.s.nickname}}</a> {{item.v}} <a href="#{{item.o.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.o.name}}</a>!
+    <p>{{item.ts}}</p>
+	<ion-option-button class="button-positive">Share</ion-option-button>
+    <ion-option-button class="button-assertive">Edit </ion-option-button>
+  </ion-item>
       </ion-list>
   </ion-content>
 </ion-view>

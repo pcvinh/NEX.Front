@@ -7,8 +7,8 @@
       "proxyUrl": "http://107.167.183.96:5000/create_post"
     },
 	{
-      "path": "/add_radar_favourite",
-      "proxyUrl": "http://107.167.183.96:5000/add_radar_favourite"
+      "path": "/create_radar_favourite",
+      "proxyUrl": "http://107.167.183.96:5000/create_radar_favourite"
     },
 	{
       "path": "/create_post_like",
@@ -21,6 +21,10 @@
 	{
       "path": "/create_post_relay",
       "proxyUrl": "http://107.167.183.96:5000/create_post_relay"
+    },
+	{
+      "path": "/signup_basic",
+      "proxyUrl": "http://107.167.183.96:5000/signup_basic"
     }
   ]
 }
