@@ -1,7 +1,7 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
 	this.is_localhost = false;
-	this.is_device = true;
+	this.is_device = false;
 	this.nex_server_ip = (this.is_localhost == false) ? 'http://107.167.183.96:5000/' : 'http://127.0.0.1:5000/';
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -89,7 +89,8 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			document.addEventListener('deviceready', function () {
 				$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
 				  .then(function(data) {
-						if(data.retcod == 0) {
+						console.log('Success transfer file ' + JSON.stringify(data));
+						//if(data.retcod === 0) {
 							var url = (!config.is_device) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
 							$http({
 							  method  : 'POST',
@@ -103,7 +104,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 									callback(data);
 								}
 							});
-						}
+						//}
 				  }, function(err) {
 					// Error
 				  }, function (progress) {

@@ -44,7 +44,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			$cordovaCamera.getPicture(options).then(function(imageURI) {
 			  var image = document.getElementById('myImage');
 			  image.src = imageURI;
-			  avatarURI = imageData;
+			  avatarURI = imageURI;
 			}, function(err) {
 			  // error
 			});
