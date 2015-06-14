@@ -1,4 +1,4 @@
-<ion-view title="Post detail" >
+<ion-view title="{{title}}" >
     <ion-nav-bar class="bar-positive nav-title-slide-ios7">
       <ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
         Back
@@ -6,30 +6,38 @@
     </ion-nav-bar>
   <ion-content class="has-header">
 	<div class="list">
-	 <div class="item item-avatar">
-		<img ng-src="{{gui_get_avatar_path(myitem.owner.avatar)}}">
-		<h2>{{myitem.owner.nickname}}</h2>
-		<p>{{myitem.metadata.create_time}}</p>
+	 <div class="item item-avatar" style="padding-top:6px;padding-bottom:6px;min-height:62px">
+		<img ng-if="myitem.owner.avatar !== undefined" ng-src="{{gui_get_avatar_path(myitem.owner.avatar)}}" style="top:6px">
+		<!--h2>{{myitem.owner.nickname}}</h2-->
+		<detail-card-header user="myitem.owner" page="page"></detail-card-header>
+		
+		<!--p>{{myitem.metadata.create_time}}</p-->
+		<trim-datetime create-datetime="myitem.metadata.create_time"/>
 	  </div>
-	  <div class="item item-body">
+	  <div class="item item-body" style="padding-top: 0px;border-top-style: none;">
 		{{myitem.content}}
-		<p>
+		<!--p>
 		  <a href="#" class="subdued">{{myitem.i.l}} Like</a>
 		  <a href="#" class="subdued">{{myitem.i.c}} Comments</a>
 		  <a href="#" class="subdued">{{myitem.i.r}} Relay</a>
-		</p>
+		</p-->
+		<main-card-interactive-count />
 	  </div>
 
 	  <div class="item tabs tabs-secondary tabs-icon-left">
-		<a class="tab-item" ng-click="_click_Like()">
+		<a class="tab-item" ng-click="_click_Like({{myitem.id}})" ng-show="(myitem.type===0)">
 		  <i class="icon ion-thumbsup"></i>
 		  Like
 		</a>
-		<a class="tab-item" ng-click="_click_Comment()">
+		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})" ng-show="(myitem.type===0)">
 		  <i class="icon ion-chatbox"></i>
 		  Comment
 		</a>
-		<a class="tab-item" ng-click="_click_Relay()">
+		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})" ng-show="(myitem.type===1)">
+		  <i class="icon ion-chatbox"></i>
+		  Answer
+		</a>
+		<a class="tab-item" ng-click="_click_Relay({{myitem.id}})">
 		  <i class="icon ion-share"></i>
 		  Relay
 		</a>
@@ -37,7 +45,7 @@
 		<div class="list">
 		<a class="item item-avatar" href="#/tab/main/commnet/{{comment.id}}" ng-repeat="comment in comments">
 		  <img ng-src="{{gui_get_avatar_path(comment.owner.avatar)}}">
-		  <h2>{{comment.owner.nickname}}</h2>
+		  <detail-card-header user="comment.owner" page="page"></detail-card-header>
 		  <p>{{comment.content}}</p>
 		</a>
 		</div>

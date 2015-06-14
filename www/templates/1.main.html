@@ -10,9 +10,9 @@
 	<ion-side-menu-content edge-drag-threshold="true" drag-content="true">
 		<ion-header-bar class="bar bar-subheader">
 			<div class="button-bar">
-			<a class="button button-icon icon ion-compose" ng-click="clickCreateNew()"></a>
-			<a class="button button-icon icon ion-images" ng-click="clickCreateNew()"></a>
-			<a class="button button-icon icon ion-help-circled" ng-click="clickCreateNew()"></a>
+			<a class="button button-icon icon ion-compose" ng-click="clickCreateNew('Create New Post', 0)"></a>
+			<a class="button button-icon icon ion-images" ng-click="clickCreateNew('Create a Photo Gallery', 0)"></a>
+			<a class="button button-icon icon ion-help-circled" ng-click="clickCreateNew('Ask Question', 1)"></a>
 			</div>
 		</ion-header-bar>	
 		<ion-nav-buttons side="left">
@@ -22,28 +22,35 @@
 	<div style="height: 80px;"></div>
 	<!--div class="list card" ng-repeat="myitem in PostList track by myitem.id"-->
 	<div class="list card" ng-repeat="myitem in PostList | orderBy : '-id'">
-	 <div class="item item-avatar">
-		<img ng-src="{{gui_get_avatar_path(myitem.owner.avatar)}}">
-		<h2>{{myitem.owner.nickname}}</h2>
-		<p>{{myitem.metadata.create_time}}</p>
+	 <div class="item item-avatar" style="padding-top:6px;padding-bottom:6px;min-height:62px">
+		<img ng-src="{{gui_get_avatar_path(myitem.owner.avatar)}}" style="top:6px">
+		<!--h2><a href="#/tab/main/profile/{{myitem.owner.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{myitem.owner.nickname}}</a></h2-->
+		<main-card-header></main-card-header>
+		<!--p>{{myitem.metadata.create_time}}</p-->
+		<trim-datetime create-datetime="myitem.metadata.create_time"/>
 	  </div>
-	  <div class="item item-body">
-		<v-trim-content id="{{myitem.id}}"></v-trim-content>
-		<p>
+	  <div class="item item-body" style="padding-top: 0px;border-top-style: none;">
+		<main-card-content-trim id="{{myitem.id}}" ></main-card-content-trim>
+		<!--p>
 		  <a href="#" class="subdued">{{myitem.i.l}} Like</a>
 		  <a href="#" class="subdued">{{myitem.i.c}} Comments</a>
 		  <a href="#" class="subdued">{{myitem.i.r}} Relay</a>
-		</p>
+		</p-->
+		<main-card-interactive-count />
 	  </div>
 
 	  <div class="item tabs tabs-secondary tabs-icon-left">
-		<a class="tab-item" ng-click="_click_Like({{myitem.id}}, $index)">
+		<a class="tab-item" ng-click="_click_Like({{myitem.id}}, $index)" ng-show="(myitem.type===0)">
 		  <i class="icon ion-thumbsup"></i>
 		  Like
 		</a>
-		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})">
+		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})" ng-show="(myitem.type===0)">
 		  <i class="icon ion-chatbox"></i>
 		  Comment
+		</a>
+		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})" ng-show="(myitem.type===1)">
+		  <i class="icon ion-chatbox"></i>
+		  Answer
 		</a>
 		<a class="tab-item" ng-click="_click_Relay({{myitem.id}}, $index)">
 		  <i class="icon ion-share"></i>
@@ -113,15 +120,15 @@
 <script id="popup-create-new.html" type="text/ng-template">
   <ion-modal-view>
 	 <ion-header-bar class="bar-secondary">
-		  <h1 class="title">New Post</h1>
+		  <h1 class="title">{{pop_up_name}}</h1>
 		  <button class="button button-clear button-positive" ng-click="_click_closeCreateNewModal()">Cancel</button>
 	</ion-header-bar>
 	
     <ion-content>
       <form ng-submit="_click_createPost(message)">
 		<div class="list">
-		  <label class="item item-input">
-			<textarea placeholder="What you want to say?" rows="20" ng-model="message.Content"></textarea>
+		  <label class="item item-input" style="border-width:0px" >
+			<textarea placeholder="What you want to say?" rows="2" ng-model="message.Content" auto-grow></textarea>
 		  </label>
 		</div>
         <div class="padding">
@@ -129,5 +136,13 @@
         </div>
       </form>
     </ion-content>
+	<ion-footer-bar keyboard-attach align-title="right" class="bar-light item-input-inset" >
+
+			<a class="button button-icon icon ion-camera" ng-click=""></a>
+			<a ng-if="type===1" class="button button-icon icon ion-cash" ng-click=""></a>
+			<a class="button button-icon icon ion-cash" ng-click="" style="visibility: hidden"></a>
+			
+	</ion-footer-bar>
+
   </ion-modal-view>
 </script>

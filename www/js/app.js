@@ -47,10 +47,20 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
       templateUrl: 'templates/0.sign-in.html',
       controller: 'SignInCtrl'
     })
-	.state('register_basic', {
-      url: '/register-basic/:userId',
-      templateUrl: 'templates/0.1.register.basic.html',
-      controller: 'RegisterBasicCtrl'
+	.state('register_basic_nickname', {
+      url: '/register_basic_nickname/:userId',
+      templateUrl: 'templates/0.1.register.basic.nickname.html',
+      controller: 'RegisterBasicNicknameCtrl'
+    })
+	.state('register_basic_fullname', {
+      url: '/register_basic_fullname',
+      templateUrl: 'templates/0.1.register.basic.fullname.html',
+      controller: 'RegisterBasicFullnameCtrl'
+    })
+	.state('register_basic_avatar', {
+      url: '/register_basic_avatar',
+      templateUrl: 'templates/0.1.register.basic.avatar.html',
+      controller: 'RegisterBasicAvatarCtrl'
     })
 	
     // setup an abstract state for the tabs directive
@@ -74,7 +84,7 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		url: '/main/detail/:detailId',
 		views: {
 		'tab-main': {
-			templateUrl: 'templates/_4.detail.html',
+			templateUrl: 'templates/4.detail.html',
 			controller: 'm_DetailCtrl'
 			}
 		}
@@ -83,7 +93,7 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		url: '/main/comment/:commentId',
 		views: {
 		'tab-main': {
-			templateUrl: 'templates/_4.1.comment.html',
+			templateUrl: 'templates/4.1.comment.html',
 			controller: 'm_CommentCtrl'
 			}
 		}
@@ -101,7 +111,7 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		url: '/main/profile/:profileId',
 		views: {
 		'tab-main': {
-			templateUrl: 'templates/_6.profile.html',
+			templateUrl: 'templates/6.profile.html',
 			controller: 'm_ProfileCtrl'
 			}
 		}
@@ -120,7 +130,7 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		url: '/notify/detail/:detailId',
 		views: {
 		'tab-notify': {
-			templateUrl: 'templates/_4.detail.html',
+			templateUrl: 'templates/4.detail.html',
 			controller: 'n_DetailCtrl'
 			}
 		}
@@ -129,7 +139,7 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		url: '/notify/comment/:commentId',
 		views: {
 		'tab-notify': {
-			templateUrl: 'templates/_4.1.comment.html',
+			templateUrl: 'templates/4.1.comment.html',
 			controller: 'n_CommentCtrl'
 			}
 		}
@@ -147,7 +157,7 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		url: '/notify/profile/:profileId',
 		views: {
 		'tab-notify': {
-			templateUrl: 'templates/_6.profile.html',
+			templateUrl: 'templates/6.profile.html',
 			controller: 'n_ProfileCtrl'
 			}
 		}
@@ -163,25 +173,25 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		}
 	})
 	.state('tab.me_detail', {
-		url: '/notify/detail/:detailId',
+		url: '/me/detail/:detailId',
 		views: {
 		'tab-me': {
-			templateUrl: 'templates/_4.detail.html',
+			templateUrl: 'templates/4.detail.html',
 			controller: 'me_DetailCtrl'
 			}
 		}
 	})
 	.state('tab.me_comment', {
-		url: '/notify/comment/:commentId',
+		url: '/me/comment/:commentId',
 		views: {
 		'tab-me': {
-			templateUrl: 'templates/_4.1.comment.html',
+			templateUrl: 'templates/4.1.comment.html',
 			controller: 'me_CommentCtrl'
 			}
 		}
 	})
 	.state('tab.me_chatroom', {
-		url: '/notify/chatroom/:chatroomId',
+		url: '/me/chatroom/:chatroomId',
 		views: {
 		'tab-me': {
 			templateUrl: 'templates/_5.chatroom.html',
@@ -190,11 +200,66 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 		}
 	})
 	.state('tab.me_profile', {
-		url: '/notify/profile/:profileId',
+		url: '/me/profile/:profileId',
 		views: {
 		'tab-me': {
-			templateUrl: 'templates/_6.profile.html',
+			templateUrl: 'templates/6.profile.html',
 			controller: 'me_ProfileCtrl'
+			}
+		}
+	})
+	//////////////////////
+	.state('tab.me_my_profile', {
+		url: '/me/myprofile',
+		views: {
+		'tab-me': {
+			templateUrl: 'templates/3.1.profile.html',
+			controller: 'me_MyProfileCtrl'
+			}
+		}
+	})
+	.state('tab.me_my_postlist', {
+		url: '/me/postlist',
+		views: {
+		'tab-me': {
+			templateUrl: 'templates/3.2.postlist.html',
+			controller: 'me_MyPostlistCtrl'
+			}
+		}
+	})
+	.state('tab.me_my_history', {
+		url: '/me/history',
+		views: {
+		'tab-me': {
+			templateUrl: 'templates/3.3.history.html',
+			controller: 'me_MyHistoryCtrl'
+			}
+		}
+	})
+	.state('tab.me_settings', {
+		url: '/me/settings',
+		views: {
+		'tab-me': {
+			templateUrl: 'templates/3.4.settings.html',
+			controller: 'me_SettingsCtrl'
+			}
+		}
+	})
+	.state('tab.me_policy', {
+		url: '/me/policy',
+		views: {
+		'tab-me': {
+			templateUrl: 'templates/3.5.policy.html',
+			controller: 'me_PolicyCtrl'
+			}
+		}
+	})
+	.state('tab.me_help', {
+		url: '/me/help',
+		views: {
+		'tab-me': {
+			templateUrl: 'templates/3.6.help.html',
+			controller: 'me_HelpCtrl'
 			}
 		}
 	})

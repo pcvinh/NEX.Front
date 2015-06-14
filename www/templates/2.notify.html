@@ -23,7 +23,7 @@
 
   <ion-item class="item-avatar" ng-repeat="item in list" href="#">
 	<img ng-src="{{gui_get_avatar_path(item.s.avatar)}}">
-    <a href="#{{item.s.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.s.nickname}}</a> {{item.v}} <a href="#{{item.o.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.o.name}}</a>!
+    <a href="#/tab/notify/profile/{{item.s.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.s.nickname}}</a> {{item.v}} <a href="#/tab/notify/detail/{{item.o.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.o.name}}</a>!
     <p>{{item.ts}}</p>
 	<ion-option-button class="button-positive">Share</ion-option-button>
     <ion-option-button class="button-assertive">Edit </ion-option-button>

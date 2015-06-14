@@ -1,5 +1,119 @@
 angular.module('nexengine.directives', [])
-.directive('vTrimContent', function() {
+.directive("autoGrow", ['$window', function($window){
+    return {
+        link: function (scope, element, attr, $window) {
+            var update = function () {
+                var scrollLeft, scrollTop;
+                scrollTop = window.pageYOffset;
+                scrollLeft = window.pageXOffset;
+
+                element.css("height", "auto");
+                var height = element[0].scrollHeight;
+                if (height > 0) {
+                    element.css("height", height + "px");
+                }
+                window.scrollTo(scrollLeft, scrollTop);
+            };
+            scope.$watch(attr.ngModel, function () {
+                update();
+            });
+            attr.$set("ngTrim", "false");
+        }
+    };
+}])
+.directive('mainCardHeader', function() {
+	return {
+		restrict: 'E',
+		/*scope: {
+		  trimcontent: '=item'
+		},*/
+        link: function(scope, element, attrs) {
+			var t = scope.myitem.type;
+			if(t === 0) {
+				ret = '<h2 style="display:inline !important"><a href="#/tab/main/profile/'+scope.myitem.owner.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.myitem.owner.nickname+'</a></h2>';
+				element.html(ret);
+			} else {
+				ret = '<h2 style="display:inline !important"><a href="#/tab/main/profile/'+scope.myitem.owner.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.myitem.owner.nickname+'</a> <span style="color: #777;font-size:small">ask a question</span> <i class="icon ion-chatboxes"></i></h2>';
+				element.html(ret);
+			}
+        }
+    };
+})
+.directive('detailCardHeader', function() {
+	return {
+		restrict: 'E',
+		scope: {
+		  page: '=',
+		  user: '='
+		},
+        link: function(scope, element, attrs) {
+			var t = scope.page;
+			function update() {
+				if(t === 0) { // 0 = main page, 1=notification, 2 = me 
+					ret = '<h2 style="display:inline !important"><a href="#/tab/main/profile/'+scope.user.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.user.nickname+'</a></h2>';
+					element.html(ret);
+				} else {
+					ret = '<h2 style="display:inline !important"><a href="#/tab/notify/profile/'+scope.user.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.user.nickname+'</a></h2>';
+					element.html(ret);
+				}
+			}
+			
+			scope.$watch('user.id', function(newValue, oldValue) {
+				if ( typeof newValue !== 'undefined') {
+					update();
+				}
+			});
+        }
+    };
+})
+.directive('trimDatetime', function() {
+	function gui_datetime_difference(sdt) {
+		var now = new Date();
+		var dt = new Date(sdt);
+		var delta = Math.round((now - dt) / 1000);
+		if (delta < 60) {
+			return delta + " seconds ago";
+		} else if (delta < 60 * 60) {
+			return Math.round(delta / 60) + " minutes ago";
+		} else if (delta < 60 * 60 * 24) {
+			return Math.round(delta / (60 * 60)) + " hours ago";
+		} else if (delta < 60 * 60 * 24 * 7) {
+			return Math.round(delta / (60 * 60 * 24)) + " days ago";
+		} else if(delta < 60 * 60 * 24 * 7 * 365){
+			var options = {
+				month: "long", day: "numeric"
+			};
+			return dt.toLocaleDateString("en-US",options);
+		} else {
+			var options = {
+				year: "numeric", month: "long", day: "numeric"
+			};
+			return dt.toLocaleDateString("en-US",options);		
+		}
+	}
+	
+	return {
+		restrict: 'E',
+		scope: {
+		  datetime: '=createDatetime'
+		},
+        link: function(scope, element, attrs) {
+			function update() {
+				var sdt = scope.datetime;
+
+				ret = '<p style="font-size:small">'+gui_datetime_difference(sdt)+'</p>';
+				element.html(ret);
+			}
+			
+			scope.$watch('datetime', function(newValue, oldValue) {
+				if ( typeof newValue !== 'undefined') {
+					update();
+				}
+			});
+        }
+    };
+})
+.directive('mainCardContentTrim', function() {
 	return {
 		restrict: 'E',
 		/*scope: {
@@ -7,7 +121,6 @@ angular.module('nexengine.directives', [])
 		},*/
         link: function(scope, element, attrs) {
 			var minimized_elements = element;
-			console.log(scope.myitem.content);
 			function minimize(element, id) {
 				//var t = element.text();        
 				var t = scope.myitem.content;
@@ -31,12 +144,37 @@ angular.module('nexengine.directives', [])
 					$(this).parent().hide().prev().show().prev().fadeOut("slow");    
 				});
 			}
-
 	
 			minimize(minimized_elements, attrs.id);
         }
     };
 
+})
+.directive('mainCardInteractiveCount', function() {
+	return {
+		restrict: 'E',
+		/*scope: {
+		  trimcontent: '=item'
+		},*/
+        link: function(scope, element, attrs) {
+			function update() {
+				var t = scope.myitem.type;
+				if(t === 0 || t == null) {
+					ret = '<p style="font-size:small"><a href="#" class="subdued">'+scope.myitem.i.l+' Like</a><a href="#" class="subdued">'+scope.myitem.i.c+' Comments</a><a href="#" class="subdued">'+scope.myitem.i.r+' Relay</a></p>';
+					element.html(ret);
+				} else if(t === 1){
+					ret = '<p style="font-size:small"><a href="#" class="subdued">'+scope.myitem.i.c+' Answers</a><a href="#" class="subdued">'+scope.myitem.i.r+' Relay</a></p>';
+					element.html(ret);
+				}
+			}
+			
+			scope.$watch('myitem.type', function(newValue, oldValue) {
+				if ( typeof newValue !== 'undefined') {
+					update();
+				}
+			});
+        }
+    };
 })
 .directive('headerShrink', function($document) {
   var fadeAmt;

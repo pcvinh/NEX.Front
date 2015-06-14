@@ -1,0 +1,81 @@
+<ion-view title="User Profile">
+    <!--ion-nav-bar class="bar-positive nav-title-slide-ios7 bar-light transparent-nav" style="background: none; border-bottom: none"-->
+	<ion-nav-bar class="bar-positive nav-title-slide-ios7">
+      <ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
+        Back
+      </ion-nav-back-button>
+
+    </ion-nav-bar>
+
+	<!--ion-content class="has-header fb-profile-content" -->   
+<ion-content class="has-header" >   	
+<div class="fb-profile">
+        <img align="left" class="fb-image-lg" src="img/banner.jpg" alt="Profile image banner"/>
+		<!--img align="left" class="fb-image-profile thumbnail" src="img/avatar.png" alt="Profile image"/-->
+        <img align="left" class="fb-image-profile thumbnail" ng-if="Profile.avatar !== undefined" ng-src="{{gui_get_avatar_path(Profile.avatar)}}" alt="Profile image"/>
+        <div class="fb-profile-text">
+            <h1>{{gui_get_profile_name()}}</h1>
+			<p>	  		
+		  <a href="#" class="subdued"></a>
+		</p>
+        </div>
+</div>
+<div class="item tabs tabs-icon-top">
+  <a class="tab-item">
+    <i class="icon ion-person-add"></i>
+    Add Friend
+  </a>
+  <a class="tab-item">
+    <i class="icon ion-eye"></i>
+    Follow
+  </a>
+  <!--a class="tab-item">
+    <i class="icon ion-chatboxes"></i>
+    Message
+  </a-->
+</div>
+
+<ul class="list">
+	<div class="item item-divider">
+	</div>
+
+	<div class="item">
+	{{gui_get_profile_name()}}'s Activity
+	</div>
+	<div class="item item-divider">
+	<span class="item-note" style="font-weight: 100">
+	<trim-datetime create-datetime="ProfilePostList[0].metadata.create_time"></trim-datetime>
+	</span>
+	</div>
+	
+	<div class="list card" ng-repeat="myitem in ProfilePostList | orderBy : '-id'">
+	  <div class="item item-text-wrap" style="padding-top: 6px;">
+		<trim-datetime create-datetime="myitem.metadata.create_time"></trim-datetime>
+		<main-card-content-trim id="{{myitem.id}}" ></main-card-content-trim>
+
+		<main-card-interactive-count />
+	  </div>
+
+	  <div class="item tabs tabs-secondary tabs-icon-left">
+		<a class="tab-item" ng-click="_click_Like({{myitem.id}}, $index)" ng-show="(myitem.type===0)">
+		  <i class="icon ion-thumbsup"></i>
+		  Like
+		</a>
+		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})" ng-show="(myitem.type===0)">
+		  <i class="icon ion-chatbox"></i>
+		  Comment
+		</a>
+		<a class="tab-item" ng-click="_click_Comment({{myitem.id}})" ng-show="(myitem.type===1)">
+		  <i class="icon ion-chatbox"></i>
+		  Answer
+		</a>
+		<a class="tab-item" ng-click="_click_Relay({{myitem.id}}, $index)">
+		  <i class="icon ion-share"></i>
+		  Relay
+		</a>
+	  </div>
+	</div>
+	
+</ul>
+</ion-content>
+</ion-view>
