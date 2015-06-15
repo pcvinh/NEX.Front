@@ -7,6 +7,10 @@
       "proxyUrl": "http://107.167.183.96:5000/create_post"
     },
 	{
+      "path": "/create_post_question",
+      "proxyUrl": "http://107.167.183.96:5000/create_post_question"
+    },
+	{
       "path": "/create_radar_favourite",
       "proxyUrl": "http://107.167.183.96:5000/create_radar_favourite"
     },
@@ -23,8 +27,16 @@
       "proxyUrl": "http://107.167.183.96:5000/create_post_relay"
     },
 	{
-      "path": "/signup_basic",
-      "proxyUrl": "http://107.167.183.96:5000/signup_basic"
+      "path": "/signup_basic_nickname",
+      "proxyUrl": "http://107.167.183.96:5000/signup_basic_nickname"
+    },
+	{
+      "path": "/signup_basic_avatar",
+      "proxyUrl": "http://107.167.183.96:5000/signup_basic_avatar"
+    },
+	{
+      "path": "/signup_basic_fullname",
+      "proxyUrl": "http://107.167.183.96:5000/signup_basic_fullname"
     }
   ]
 }

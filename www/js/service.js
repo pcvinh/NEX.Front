@@ -299,24 +299,24 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		}, false);
 	}
 	
-	/*function _get_location(callback) {
-		var posOptions = {timeout: 10000, enableHighAccuracy: false};
-		$cordovaGeolocation
-		.getCurrentPosition(posOptions)
-		.then(function (position) {
-		  var lat  = position.coords.latitude
-		  var lng = position.coords.longitude
-		  callback(lat,lng);
-		}, function(err) {
-		  // error
-		});
-	}*/
-	
-	function _get_location(callback) { // for manual testing purpose
-		var lat = 1.3014259, lng = 103.839855;
-		callback(lat,lng);
+	function _get_location(callback) {
+		if(config.is_device) {
+			var posOptions = {timeout: 10000, enableHighAccuracy: false};
+			$cordovaGeolocation
+			.getCurrentPosition(posOptions)
+			.then(function (position) {
+			  var lat  = position.coords.latitude
+			  var lng = position.coords.longitude
+			  callback(lat,lng);
+			}, function(err) {
+			  // error
+			});
+		} else {
+			var lat = 1.3014259, lng = 103.839855;
+			callback(lat,lng);
+		}
 	}
-	
+		
 	this.init = function(callback) {
 		var url = config.nex_server_ip+'init?callback=JSON_CALLBACK&token='+self.token;
 		var request = $http.jsonp(url);		
@@ -418,7 +418,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	this.clear_radar = function(radar_callback) {
 		PubNub.ngUnsubscribe({
 			channel : self.current_channels, 
-			//callback : function(){console.log('xong')},
+			callback : function(){console.log('xong')},
 			http_sync : false
 		});
 	}

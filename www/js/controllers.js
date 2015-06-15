@@ -64,8 +64,12 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				  var image = document.getElementById('myImage');
 				  image.src = imageURI;
 				  avatarURI = imageURI;
+				  login.register_basic_avatar(avatarURI, function (data) {
+						$state.go('tab.main');
+					});
 				}, function(err) {
 				  // error
+					console.log('Error to get picture from device.');
 				});
 		  }, false);
 		} 
@@ -106,6 +110,12 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		} else {
 			$scope.PostList =  main.list;
 			$scope.FavouriteList = main.fav_list;
+			if(!login.is_init) {
+				login.init(function(){
+					
+				});
+			}
+			
 		}
 		
 		/* modal popup */ 

@@ -25,9 +25,10 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
 	
 	if(login.checklogin()) {
 		// init 
-		login.init(function() {
+		//login.init(function() {
+			//console.log('init success. now goto tab.main');
 			$state.go('tab.main');
-		});
+		//});
 		
 	} else {
 		$state.go('signin');
