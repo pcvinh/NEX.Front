@@ -35,16 +35,19 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	}
 })
 .controller('RegisterBasicFullnameCtrl', function($scope, $state, $stateParams, $http, login) { // this will have the upload picture. 
+	$scope.userId = $stateParams.userId;	
 	$scope.register_basic = function(fullname) {
 		if(typeof fullname == 'undefine' || fullname == null || fullname == '') return;
 		
-		login.register_basic_fullname(fullname, function (data) {
+		login.register_basic_fullname($stateParams.userId, fullname, function (data) {
 				$state.go('register_basic_avatar');
 		});
 	}
 })
-.controller('RegisterBasicAvatarCtrl', function($scope, $state, $http, $cordovaCamera, login, config) { // this will have the upload picture. 
+.controller('RegisterBasicAvatarCtrl', function($scope, $state, $stateParams, $http, $cordovaCamera, login, config) { // this will have the upload picture. 
 	var avatarURI;
+	
+	$scope.userId = $stateParams.userId;
 	$scope.choose_image = function(type) {
 		if(config.is_device) {
 			document.addEventListener('deviceready', function () {
@@ -64,7 +67,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				  var image = document.getElementById('myImage');
 				  image.src = imageURI;
 				  avatarURI = imageURI;
-				  login.register_basic_avatar(avatarURI, function (data) {
+				  login.register_basic_avatar($stateParams.userId, avatarURI, function (data) {
 						$state.go('tab.main');
 					});
 				}, function(err) {
@@ -425,7 +428,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	}
 	
 	$scope.gui_get_profile_name = function() {
-		if($scope.Profile.fullname !== null) return '('+$scope.Profile.nickname+') ' + $scope.Profile.fullname;		
+		if($scope.Profile.fullname !== null || typeof $scope.Profile.fullname !== 'undefined') return '('+$scope.Profile.nickname+') ' + $scope.Profile.fullname;		
 		
 		return $scope.Profile.nickname;
 	}

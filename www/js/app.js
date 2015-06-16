@@ -54,12 +54,12 @@ angular.module('NEX', ['ionic','ngCordova', 'pubnub.angular.service', 'nexengine
       controller: 'RegisterBasicNicknameCtrl'
     })
 	.state('register_basic_fullname', {
-      url: '/register_basic_fullname',
+      url: '/register_basic_fullname/:userId',
       templateUrl: 'templates/0.1.register.basic.fullname.html',
       controller: 'RegisterBasicFullnameCtrl'
     })
 	.state('register_basic_avatar', {
-      url: '/register_basic_avatar',
+      url: '/register_basic_avatar/:userId',
       templateUrl: 'templates/0.1.register.basic.avatar.html',
       controller: 'RegisterBasicAvatarCtrl'
     })
