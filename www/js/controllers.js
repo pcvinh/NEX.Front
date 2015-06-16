@@ -30,7 +30,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		if(typeof nickname == 'undefined' || nickname == null || nickname == '') return;
 		
 		login.register_basic_nickname($stateParams.userId, nickname, function (data) {
-				$state.go('register_basic_fullname',{userId: data.id});
+				$state.go('register_basic_fullname',{userId: $stateParams.userId});
 		});
 	}
 })
@@ -40,7 +40,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		if(typeof fullname == 'undefined' || fullname == null || fullname == '') return;
 		
 		login.register_basic_fullname(fullname, function (data) {
-				$state.go('register_basic_avatar',{userId: $scope.userId});
+				$state.go('register_basic_avatar',{userId: $stateParams.userId});
 		});
 	}
 })
@@ -66,9 +66,6 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				  var image = document.getElementById('myImage');
 				  image.src = imageURI;
 				  avatarURI = imageURI;
-				  login.register_basic_avatar($stateParams.userId, avatarURI, function (data) {
-						$state.go('tab.main');
-					});
 				}, function(err) {
 				  // error
 					console.log('Error to get picture from device.');
@@ -78,7 +75,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	}
 	
 	$scope.register_basic = function() {
-		login.register_basic_avatar(avatarURI, function (data) {		
+		login.register_basic_avatar($stateParams.userId, avatarURI, function (data) {		
 			login.init(function() {
 				$state.go('tab.main');
 			});
