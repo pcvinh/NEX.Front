@@ -292,9 +292,9 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 					console.log('Success transfer file ' + JSON.stringify(data));
 					callback(data);
 			  }, function(err) {
-					console.log('Error transfer file ' + JSON.stringify(data));
+					console.log('Error transfer file ' + err);
 			  }, function (progress) {
-					console.log('Error transfer file ' + JSON.stringify(data));
+					console.log('Progress transfer file ' + progress);
 			  });
 		}, false);
 	}
