@@ -8,20 +8,20 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	
 	this.is_debug = {
 		'service_post' : true,		
-		'service_profile' :  false,
-		'service_login' :  false,
-		'service_main' :  false,
-		'service_notification' :  false,
-		'service_me' :  false
+		'service_profile' :  true,
+		'service_login' :  true,
+		'service_main' :  true,
+		'service_notification' :  true,
+		'service_me' :  true
 	}
 })
 .service('vlog', function(config){
-	this.log = function(msg, module) {
-		if(config.is_debug[module]) console.log('[INFO]' + msg);
+	this.log = function(msg) { // same as console but we make it as one clue for easier deal with.
+		console.log(msg);
 	}
 	
-	this.debug = function(msg, module) {
-		console.log('[DEBUG]' + msg);
+	this.info = function(msg, module) {
+		if(config.is_debug[module]) console.log('[INFO]' + msg);
 	}
 	
 	this.error = function(err) {
@@ -39,7 +39,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		var url = config.nex_server_ip+'get_post_list?callback=JSON_CALLBACK' + list_channels + '&page=' + page;
 		var request = $http.jsonp(url);		
 		request.success(function(data) {
-			vlog.log('SUCCESS get_latest_post_list return: ' + JSON.stringify(data), 'service_post');
+			vlog.info('SUCCESS get_latest_post_list return: ' + JSON.stringify(data), 'service_post');
 			callback(data.posts);
 		});
 	}
@@ -64,7 +64,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			data    : { Channels: current_channel, Title : message.Title, Content: message.Content, Token: token},  // pass in data as strings	
 			headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 			}).success(function(data) {
-				vlog.log('SUCCESS createPost return: ' + JSON.stringify(data), 'service_post');
+				vlog.info('SUCCESS createPost return: ' + JSON.stringify(data), 'service_post');
 				callback(data);
 			});
 	}
@@ -83,7 +83,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		data    : { id: id, Token: token},  // pass in data as strings	
 		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 		}).success(function(data) {
-			vlog.log('SUCCESS createPostLike return: ' + JSON.stringify(data), 'service_post');
+			vlog.info('SUCCESS createPostLike return: ' + JSON.stringify(data), 'service_post');
 			callback(data);
 		});
 	}
@@ -102,7 +102,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		data    : { channel: current_channel, id: id, Token: token},  // pass in data as strings	
 		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 		}).success(function(data) {
-			vlog.log('SUCCESS createPostRelay return: ' + JSON.stringify(data), 'service_post');
+			vlog.info('SUCCESS createPostRelay return: ' + JSON.stringify(data), 'service_post');
 			callback(data);
 		});
 	}
@@ -121,7 +121,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		data    : { id: id, Token: token, content : comment.Content},  // pass in data as strings	
 		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 		}).success(function(data){
-			vlog.log('SUCCESS createPostComment return: ' + JSON.stringify(data), 'service_post');
+			vlog.info('SUCCESS createPostComment return: ' + JSON.stringify(data), 'service_post');
 			callback(data);
 		});
 	}
@@ -137,7 +137,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				request = $http.jsonp(url);	
 				request.success(function(data1) {
 					if(data1.retcode === 0) {
-						vlog.log('SUCCESS init_post_detail return: ' + JSON.stringify(data1), 'service_post');
+						vlog.info('SUCCESS init_post_detail return: ' + JSON.stringify(data1), 'service_post');
 						
 						$scope.comments = data1.comments;
 					}
@@ -156,7 +156,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 3. Services = processing ?
 - check login: to check localStorage if token already exist.
 **************************************/
-.service('login', function($rootScope, $http, $window, $cordovaFileTransfer, $cordovaGeolocation, config, main, notification){
+.service('login', function($rootScope, $http, $window, $cordovaFileTransfer, $cordovaGeolocation, config, main, notification, vlog){
 	var self = this;
 	var key = 'nex_token';
 	self.token = null;
@@ -289,12 +289,12 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		document.addEventListener('deviceready', function () {
 			$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
 			  .then(function(data) {
-					console.log('Success transfer file ' + JSON.stringify(data));
+					vlog.log('Success transfer file ' + JSON.stringify(data));
 					callback(data);
 			  }, function(err) {
-					console.log('Error transfer file ' + JSON.stringify(err));
+					vlog.log('Error transfer file ' + JSON.stringify(err));
 			  }, function (progress) {
-					console.log('Progress transfer file ' + JSON.stringify(progress));
+					vlog.log('Progress transfer file ' + JSON.stringify(progress));
 			  });
 		}, false);
 	}
@@ -354,7 +354,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 3. Services = processing ?
 
 **************************************/
-.service('main', function($rootScope, $http, PubNub, config, post){
+.service('main', function($rootScope, $http, PubNub, config, post, vlog){
 	var self = this;
 	self.list = [];	
 	self.fav_list = [];
@@ -418,7 +418,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	this.clear_radar = function(radar_callback) {
 		PubNub.ngUnsubscribe({
 			channel : self.current_channels, 
-			callback : function(){console.log('xong')},
+			callback : function(){vlog.log('xong')},
 			http_sync : false
 		});
 	}
@@ -561,7 +561,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('chatroom', function($rootScope, $http, config){
 
 })
-.service('profile', function($rootScope, $http, config){
+.service('profile', function($rootScope, $http, config, vlog){
 
 	this.get_profile_header = function($scope, token, id) {
 		var url = config.nex_server_ip+'get_profile_header?callback=JSON_CALLBACK&id='+ id +'&token='+ token;
@@ -571,7 +571,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			
 			if(data.retcode === 0) {
 				$scope.Profile = data.profile;
-				console.log(JSON.stringify($scope.Profile.avatar));
+				vlog.log('Avatar: ' + JSON.stringify($scope.Profile.avatar));
 			}
 		});
 	}
@@ -588,8 +588,6 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			}
 		});
 	}
-	
-
 })
 .service('me', function($rootScope, $http, config){
 
