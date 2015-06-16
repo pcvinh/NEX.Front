@@ -278,13 +278,13 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	this.register_basic_avatar = function(avatarURI, callback) {
+	this.register_basic_avatar = function(id, avatarURI, callback) {
 		var options = {};
 		options.params = {
 			'token': self.token
 		};
 		
-		var url_avatar = (config.is_localhost) ? '/signup_basic_avatar' : config.nex_server_ip + 'signup_basic_avatar';
+		var url_avatar = (config.is_localhost) ? '/signup_basic_avatar/'+id : config.nex_server_ip + 'signup_basic_avatar/'+id;
 		//var url_avatar = 'http://'
 		document.addEventListener('deviceready', function () {
 			$cordovaFileTransfer.upload(url_avatar, avatarURI, options)

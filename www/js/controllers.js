@@ -27,27 +27,26 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 })
 .controller('RegisterBasicNicknameCtrl', function($scope, $state, $stateParams, $http, login) { // this will have the upload picture. 
 	$scope.register_basic = function(nickname) {
-		if(typeof nickname == 'undefine' || nickname == null || nickname == '') return;
+		if(typeof nickname == 'undefined' || nickname == null || nickname == '') return;
 		
 		login.register_basic_nickname($stateParams.userId, nickname, function (data) {
-				$state.go('register_basic_fullname');
+				$state.go('register_basic_fullname',{userId: data.id});
 		});
 	}
 })
 .controller('RegisterBasicFullnameCtrl', function($scope, $state, $stateParams, $http, login) { // this will have the upload picture. 
 	$scope.userId = $stateParams.userId;	
 	$scope.register_basic = function(fullname) {
-		if(typeof fullname == 'undefine' || fullname == null || fullname == '') return;
+		if(typeof fullname == 'undefined' || fullname == null || fullname == '') return;
 		
-		login.register_basic_fullname($stateParams.userId, fullname, function (data) {
-				$state.go('register_basic_avatar');
+		login.register_basic_fullname(fullname, function (data) {
+				$state.go('register_basic_avatar',{userId: $scope.userId});
 		});
 	}
 })
 .controller('RegisterBasicAvatarCtrl', function($scope, $state, $stateParams, $http, $cordovaCamera, login, config) { // this will have the upload picture. 
 	var avatarURI;
 	
-	$scope.userId = $stateParams.userId;
 	$scope.choose_image = function(type) {
 		if(config.is_device) {
 			document.addEventListener('deviceready', function () {
