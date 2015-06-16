@@ -281,7 +281,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	this.register_basic_avatar = function(id, avatarURI, callback) {
 		var options = {};
 		options.params = {
-			'token': self.token
+			'Token': self.token
 		};
 		
 		var url_avatar = (config.is_localhost) ? '/signup_basic_avatar/'+id : config.nex_server_ip + 'signup_basic_avatar/'+id;
