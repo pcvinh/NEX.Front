@@ -1,0 +1,70 @@
+<ion-view title="Detail" >
+    <ion-nav-bar class="bar-dark nav-title-slide-ios7">
+      <ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
+        Back
+      </ion-nav-back-button>
+    </ion-nav-bar>
+	
+	<ion-content class="has-header" has-bouncing="false">
+		<div class="list">
+			<div class="item item-avatar" style="padding-top:6px;padding-bottom:6px;min-height:62px">
+				<img ng-if="myitem.owner.avatar===null" style="top:6px" name="{{myitem.owner.nickname}}" img-initial>
+				<img ng-if="myitem.owner.avatar!==null" ng-src="{{getAvatarPath(myitem.owner.avatar)}}" style="top:6px">
+				<h2 style="display:inline !important"><a href="#/tab/{{tab}}/profile/{{myitem.owner.id}}" ng-click="$event.stopPropagation()" style="text-decoration: none;color: #222; font-weight: bold;">{{myitem.owner.nickname}}</a></h2>
+				<trim-datetime create-datetime="myitem.metadata.create_time"/>
+			</div>
+			<div class="item item-body" style="padding-top: 0px;border-top-style: none;">
+				{{myitem.content}}
+				<interactive-count myitem="myitem" ></interactive-count>
+			</div>
+			<interactive-tabs myitem="myitem" myid="myid" on-like="clickLike(myitem)" on-comment="clickComment(myitem)" on-relay="clickRelay(myitem)"></interactive-tabs>
+			<div class="list">
+				<div class="item item-avatar" ng-click="openCommentDetailModal(comment)" ng-repeat="comment in comments">
+					<img ng-if="comment.owner.avatar===null || comment.owner.avatar===undefined" name="{{comment.owner.nickname}}" img-initial />
+					<img ng-if="comment.owner.avatar!==null && comment.owner.avatar!==undefined" ng-src="{{getAvatarPath(comment.owner.avatar)}}" />
+				  <h2 style="display:inline !important">
+				  <a ng-click="gotoProfile(comment.owner.id); $event.stopPropagation();" style="text-decoration: none;color: #222; font-weight: bold;">{{comment.owner.nickname}}</a></h2>
+				  <trim-datetime create-datetime="comment.metadata.create_time"></trim-datetime>
+				  <p>{{comment.content}}</p>
+				</div>
+			</div>
+		</div>
+	</ion-content>
+	
+	<ion-footer-bar keyboard-attach align-title="left" class="bar-light item-input-inset" >
+		<label class="item-input-wrapper">
+		  <input type="text" placeholder="Write a comment..." ng-model="comment.Content">
+		</label>
+		<button class="button button-clear button-stable" ng-click="submitComment(comment)">
+		  Submit
+		</button>
+	</ion-footer-bar>
+</ion-view>
+
+<!-- comment-detail.html -->
+<script id="comment-detail.html" type="text/ng-template">
+  <ion-modal-view>
+  	 <ion-header-bar class="bar-secondary">
+		<a class="button-icon ion-ios7-arrow-back button" ng-click="closeCommentDetailModal()">
+			Back
+		</a>
+		  <h1 class="title">Comment Detail</h1>
+	</ion-header-bar>
+    <ion-content>
+		<div class="card">
+		  <div class="item item-text-wrap">
+			{{current_comment_detail.content}}
+		  </div>
+		</div>
+    </ion-content>
+	<!--ion-footer-bar keyboard-attach align-title="right" class="bar-light item-input-inset" >
+		<label class="item-input-wrapper">
+		  <input type="text" placeholder="Write a comment..." ng-model="comment.Content">
+		</label>
+		<button class="button button-clear button-stable" ng-click="clickComment(comment)">
+		  Post
+		</button>
+	</ion-footer-bar-->
+
+  </ion-modal-view>
+</script>

@@ -1,0 +1,14 @@
+<div class="item tabs tabs-secondary tabs-icon-left">
+	<a class="tab-item like-click-{{myitem.i.my_l}}" ng-click="like(myitem)" ng-show="(myitem.type===0)" >
+	  <i class="icon ion-thumbsup"></i>
+	  Like
+	</a>
+	<a class="tab-item" ng-click="comment(id)">
+	  <i class="icon ion-chatbox"></i>
+	  {{myitem.type === 0 ? 'Comments' : 'Answers'}}
+	</a>
+	<a class="tab-item relay-click-{{myitem.i.my_r}}" ng-click="relay(id, index)" ng-show="is_show_relay">
+	  <i class="icon ion-share"></i>
+	  Relay
+	</a>
+</div>

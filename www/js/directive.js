@@ -1,71 +1,4 @@
 angular.module('nexengine.directives', [])
-.directive("autoGrow", ['$window', function($window){
-    return {
-        link: function (scope, element, attr, $window) {
-            var update = function () {
-                var scrollLeft, scrollTop;
-                scrollTop = window.pageYOffset;
-                scrollLeft = window.pageXOffset;
-
-                element.css("height", "auto");
-                var height = element[0].scrollHeight;
-                if (height > 0) {
-                    element.css("height", height + "px");
-                }
-                window.scrollTo(scrollLeft, scrollTop);
-            };
-            scope.$watch(attr.ngModel, function () {
-                update();
-            });
-            attr.$set("ngTrim", "false");
-        }
-    };
-}])
-.directive('mainCardHeader', function() {
-	return {
-		restrict: 'E',
-		/*scope: {
-		  trimcontent: '=item'
-		},*/
-        link: function(scope, element, attrs) {
-			var t = scope.myitem.type;
-			if(t === 0) {
-				ret = '<h2 style="display:inline !important"><a href="#/tab/main/profile/'+scope.myitem.owner.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.myitem.owner.nickname+'</a></h2>';
-				element.html(ret);
-			} else {
-				ret = '<h2 style="display:inline !important"><a href="#/tab/main/profile/'+scope.myitem.owner.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.myitem.owner.nickname+'</a> <span style="color: #777;font-size:small">ask a question</span> <i class="icon ion-chatboxes"></i></h2>';
-				element.html(ret);
-			}
-        }
-    };
-})
-.directive('detailCardHeader', function() {
-	return {
-		restrict: 'E',
-		scope: {
-		  page: '=',
-		  user: '='
-		},
-        link: function(scope, element, attrs) {
-			var t = scope.page;
-			function update() {
-				if(t === 0) { // 0 = main page, 1=notification, 2 = me 
-					ret = '<h2 style="display:inline !important"><a href="#/tab/main/profile/'+scope.user.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.user.nickname+'</a></h2>';
-					element.html(ret);
-				} else {
-					ret = '<h2 style="display:inline !important"><a href="#/tab/notify/profile/'+scope.user.id+'" style="text-decoration: none;color: #222; font-weight: bold;">'+scope.user.nickname+'</a></h2>';
-					element.html(ret);
-				}
-			}
-			
-			scope.$watch('user.id', function(newValue, oldValue) {
-				if ( typeof newValue !== 'undefined') {
-					update();
-				}
-			});
-        }
-    };
-})
 .directive('trimDatetime', function() {
 	function gui_datetime_difference(sdt) {
 		var now = new Date();
@@ -101,7 +34,7 @@ angular.module('nexengine.directives', [])
 			function update() {
 				var sdt = scope.datetime;
 
-				ret = '<p style="font-size:small">'+gui_datetime_difference(sdt)+'</p>';
+				ret = '<span style="font-size:small">'+gui_datetime_difference(sdt)+'</span>';
 				element.html(ret);
 			}
 			
@@ -113,30 +46,38 @@ angular.module('nexengine.directives', [])
         }
     };
 })
-.directive('mainCardContentTrim', function() {
+.directive('contentTrim', function() {
 	return {
 		restrict: 'E',
-		/*scope: {
-		  trimcontent: '=item'
-		},*/
+		scope: {
+		  detail: '&onDetail',
+		  content: '=', 
+		  tab:'=',
+		  id: '='
+		},
         link: function(scope, element, attrs) {
 			var minimized_elements = element;
-			function minimize(element, id) {
+			function minimize(element) {
 				//var t = element.text();        
-				var t = scope.myitem.content;
+				var t = scope.content;								
+				var tab = scope.tab;
+				
 				if(t.length < 100) {
-					element.html('<a href="#/tab/main/detail/'+id+'" style="text-decoration: none;color: #444;">'+t+'</a>');
+					element.html('<a href="#/tab/'+tab+'/detail/'+scope.id+'" style="text-decoration: none;color: #444;">'+t+'</a>');
 					return;
 				}
+				
 				element.html(
-					'<a href="#/tab/main/detail/'+id+'" style="text-decoration: none;color: #444;">'+t.slice(0,100)+'</a>'+'<span>... </span><a href="#" class="more">More</a>'+
-					'<span style="display:none;"><a href="#/tab/main/detail/'+id+'" style="text-decoration: none;color: #444;">'+ t.slice(100,t.length)+'</a></span>'
+					'<a href="#/tab/'+tab+'/detail/'+scope.id+'" style="text-decoration: none;color: #444;">'+t.slice(0,100)+'</a>'+'<span>... </span><a href="#/tab/'+tab+'/detail/'+scope.id+'" class="more">More</a>'+
+					'<span style="display:none;"><a href="#/tab/'+tab+'/detail/'+scope.id+'" style="text-decoration: none;color: #444;">'+ t.slice(100,t.length)+'</a></span>'
 				);
 				
 				$('a.more', element).click(function(event){
-					event.preventDefault();
-					$(this).hide().prev().hide();
-					$(this).next().fadeIn("slow");        
+					if(t.length < 225) {
+						event.preventDefault();
+						$(this).hide().prev().hide();
+						$(this).next().fadeIn("slow");       
+					}
 				});
 				
 				$('a.less', element).click(function(event){
@@ -145,37 +86,74 @@ angular.module('nexengine.directives', [])
 				});
 			}
 	
-			minimize(minimized_elements, attrs.id);
+			minimize(minimized_elements);
         }
     };
 
 })
-.directive('mainCardInteractiveCount', function() {
+.directive('interactiveCount', function() {
 	return {
 		restrict: 'E',
-		/*scope: {
-		  trimcontent: '=item'
-		},*/
-        link: function(scope, element, attrs) {
-			function update() {
-				var t = scope.myitem.type;
-				if(t === 0 || t == null) {
-					ret = '<p style="font-size:small"><a href="#" class="subdued">'+scope.myitem.i.l+' Like</a><a href="#" class="subdued">'+scope.myitem.i.c+' Comments</a><a href="#" class="subdued">'+scope.myitem.i.r+' Relay</a></p>';
-					element.html(ret);
-				} else if(t === 1){
-					ret = '<p style="font-size:small"><a href="#" class="subdued">'+scope.myitem.i.c+' Answers</a><a href="#" class="subdued">'+scope.myitem.i.r+' Relay</a></p>';
-					element.html(ret);
-				}
-			}
-			
-			scope.$watch('myitem.type', function(newValue, oldValue) {
-				if ( typeof newValue !== 'undefined') {
-					update();
-				}
-			});
-        }
+		scope: {
+			myitem: '=',
+		  /*like : '&onLike',
+		  comment : '&onComment',
+		  relay : '&onRelay',*/
+		},
+		templateUrl: 'templates/__directive_interactive_count.html'
     };
 })
+.directive('interactiveTabs', function() {
+	return {
+		restrict: 'E',
+		scope: {
+			myitem: '=',
+			myid: '=',
+			like : '&onLike',
+			comment : '&onComment',
+			relay : '&onRelay',
+		},
+		templateUrl: 'templates/__directive_interactive_tabs.html',
+		link: function(scope, element, attrs) {	
+			scope.is_show_relay = true;
+			if(typeof attrs.isme !== 'undefined') {
+				scope.is_show_relay = !scope.$eval(attrs.isme);
+			} else { // using my_id to check
+				scope.$watch('myitem', function(newValue, oldValue) {
+					if ( typeof newValue !== 'undefined') {
+						if(scope.myid == scope.myitem.owner.id) {
+							scope.is_show_relay = false;
+						}
+					}
+				});
+			}
+		}
+    };
+})
+
+/////////////  plugin from 3rd party ///////////////////////
+.directive("autoGrow", ['$window', function($window){
+    return {
+        link: function (scope, element, attr, $window) {
+            var update = function () {
+                var scrollLeft, scrollTop;
+                scrollTop = window.pageYOffset;
+                scrollLeft = window.pageXOffset;
+
+                element.css("height", "auto");
+                var height = element[0].scrollHeight;
+                if (height > 0) {
+                    element.css("height", height + "px");
+                }
+                window.scrollTo(scrollLeft, scrollTop);
+            };
+            scope.$watch(attr.ngModel, function () {
+                update();
+            });
+            attr.$set("ngTrim", "false");
+        }
+    };
+}])
 .directive('headerShrink', function($document) {
   var fadeAmt;
 
@@ -236,6 +214,48 @@ angular.module('nexengine.directives', [])
     }
   }
 })
+.directive("owlCarousel", function() {
+	return {
+		restrict: 'E',
+		transclude: false,
+		link: function (scope) {
+			scope.initCarousel = function(element) {
+			  // provide any default options you want
+				var defaultOptions = {
+				};
+				var customOptions = scope.$eval($(element).attr('data-options'));
+				// combine the two options objects
+				for(var key in customOptions) {
+					defaultOptions[key] = customOptions[key];
+				}
+				// init carousel
+				$(element).owlCarousel(defaultOptions);
+			};
+		}
+	};
+})
+.directive('owlCarouselItem', [function() {
+	return {
+		restrict: 'A',
+		transclude: false,
+		link: function(scope, element) {
+		  // wait for the last item in the ng-repeat then call init
+			if(scope.$last) {
+				scope.initCarousel(element.parent());
+			}
+		}
+	};
+}])
+.directive('imgInitial', [function() {
+	return {
+		restrict: 'A',
+		transclude: false,
+		link: function(scope, element, attrs) {
+			console.log(attrs.ngSrc + "," +attrs.name);
+			$(element).initial({name:attrs.name});
+		}
+	};
+}]);
 // .directive('notifyItem', function ($compile) {
     // var imageTemplate = '<div class="entry-photo"><h2>&nbsp;</h2><div class="entry-img"><span><a href="{{rootDirectory}}{{content.data}}"><img ng-src="{{rootDirectory}}{{content.data}}" alt="entry photo"></a></span></div><div class="entry-text"><div class="entry-title">{{content.title}}</div><div class="entry-copy">{{content.description}}</div></div></div>';
     // var videoTemplate = '<div class="entry-video"><h2>&nbsp;</h2><div class="entry-vid"><iframe ng-src="{{content.data}}" width="280" height="200" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe></div><div class="entry-text"><div class="entry-title">{{content.title}}</div><div class="entry-copy">{{content.description}}</div></div></div>';

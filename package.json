@@ -1,7 +1,7 @@
 {
-  "name": "nex_1",
+  "name": "NexplorR",
   "version": "1.0.0",
-  "description": "nex_1: An Ionic project",
+  "description": "Next Place Explorer Radar",
   "dependencies": {
     "gulp": "^3.5.6",
     "gulp-sass": "^0.7.1",

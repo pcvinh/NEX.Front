@@ -1,0 +1,41 @@
+<ion-view view-title="Sign-In"  id="login-body">
+<!--ion-header-bar class="bar-secondary">
+	<h1 class="title">Register - Upload Avatar</h1>
+	<button class="button button-clear button-positive" ng-click="_click_closeAddFavouriteModal()">Skip  </button>
+</ion-header-bar-->
+<!--ion-content>
+
+	<div class="list">
+		<div class="item" style="background-color:#220857">
+		<a class="button" ng-click="choose_image(1)" style="padding:0px">
+			<img id="myImage" ng-src="img\avatar.png" style="max-height: 100%;" />
+			</a>
+		</div>
+		<p>
+		<div class="button-bar">
+			<a class="button button-clear icon-left ion-camera" ng-click="choose_image(0)">Camera</a>
+			<a class="button button-clear icon-left ion-image" ng-click="choose_image(1)">Photos</a>				
+		</div>
+	</div>
+	<div class="padding">
+		<button class="button button-block button-positive" ng-click="register_basic()">
+		OK
+		</button>
+		<p class="text-center">
+			<a href="#/tab/main">Skip >></a><span class="fontawesome-arrow-right"></span>
+		</p>
+	</div>
+</ion-content-->
+<div class="container">
+   <div id="login">
+      <form action="javascript:void(0);" method="get">
+         <p>
+         <a class="button" ng-click="showActionsheet()" style="padding:0px; margin: 0px 65px 0px 66px">
+			<img id="myImage" ng-src="img\avatar.png" style="max-height: 100%;" />
+		 </a>
+         <input type="submit" value="Upload Avatar" ng-click="register_basic(fullname)"></p>
+      </form>
+      <p>No avatar to upload. <a href="#/tab/main">Finish</a><span class="fontawesome-arrow-right"></span></p>
+   </div>
+</div>
+</ion-view>

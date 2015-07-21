@@ -3,26 +3,19 @@
   Each tab's child <ion-nav-view> directive will have its own 
   navigation history that also transitions its views in and out.
 -->
-<ion-tabs class="tabs-icon-top">
-
-
+<ion-tabs class="tabs-icon-top tabs-dark">
   <!-- Dashboard Tab -->
-  <ion-tab title="Radar" icon="icon ion-pinpoint" href="#/tab/main" ng-hold="console.log('test')">
+  <ion-tab title="Radar" badge="get_badge_main()" badge-style="badge-assertive" icon="icon ion-pinpoint" href="#/tab/main" ng-hold="console.log('test')">
     <ion-nav-view name="tab-main"></ion-nav-view>
   </ion-tab>
-
-
+  
   <!-- Friends Tab-->
-  <ion-tab title="Notify" icon="icon ion-grid" href="#/tab/notify">
+  <ion-tab title="Notify" badge="get_badge_notification()" badge-style="badge-assertive" icon="icon ion-grid" href="#/tab/notify">
     <ion-nav-view name="tab-notify"></ion-nav-view>
   </ion-tab>
-
-
+  
   <!-- Account Tab -->
-  <ion-tab title="Me" icon="icon ion-person" href="#/tab/me" on-hold="log('test')">
+  <ion-tab title="More" icon="icon ion-more" href="#/tab/me" on-hold="log('test')">
     <ion-nav-view name="tab-me"></ion-nav-view>
   </ion-tab>
-
-  
-
 </ion-tabs>

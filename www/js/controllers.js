@@ -1,53 +1,74 @@
 angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.services'])
-
-.controller('SignInCtrl', function($scope, $state, login, main, notification) {
-	if(login.checklogin() && login.is_init) {
-		$state.go('tab.main');
-	} 
+.controller('TabCtrl', function($scope, $window, post, notification) {
+	$scope.get_badge_notification = function() {
+		return notification.last_notification_id - $window.localStorage['last_notification_id'];
+	}
 	
-	$scope.signIn = function(username, password) {
+	$scope.get_badge_main = function() {
+		return 0;
+	}
+})
+
+/*****************************************************************************
+///////////////////////////////// Login View ////////////////////////////////
+*****************************************************************************/
+
+.controller('SignInCtrl', function($scope, $state, login) {	
+	$scope.isLoginFalse = false;
+	
+	function init() {
+		if(login.checklogin() && login.is_init) {
+			$state.go('tab.main');
+		} 
+	}
+	
+	$scope.sign_in = function(username, password) {
 		login.signinup(username, password, 0, $scope);
 		
 		$scope.$on('loginevent', function(event, data) { 
 			if( data.retcode === 0) {
-				console.log('login success');
-				// init 
-				
-				login.init(function() {
-					$state.go('tab.main');
-				});
+				$state.go('tab.main');
 			} else if( data.retcode === 1){
 				$state.go('register_basic_nickname',{userId: data.id});
 			} else {
-				// need to show pop up or show somewhere that login false due to reason.
-				console.log('login false');
+				$scope.isLoginFalse = true;
 			}
 		});
 	};
+	
+	init();
 })
-.controller('RegisterBasicNicknameCtrl', function($scope, $state, $stateParams, $http, login) { // this will have the upload picture. 
+
+.controller('RegisterBasicNicknameCtrl', function($scope, $state, $stateParams, login, util) { // this will have the upload picture. 
 	$scope.register_basic = function(nickname) {
-		if(typeof nickname == 'undefined' || nickname == null || nickname == '') return;
+		if(util.is_blank(nickname)) return;
 		
 		login.register_basic_nickname($stateParams.userId, nickname, function (data) {
+			if( data.retcode === 0) {
 				$state.go('register_basic_fullname',{userId: $stateParams.userId});
+			}
 		});
 	}
 })
+
 .controller('RegisterBasicFullnameCtrl', function($scope, $state, $stateParams, $http, login) { // this will have the upload picture. 
-	$scope.userId = $stateParams.userId;	
+	$scope.userId = $stateParams.userId;
+	
 	$scope.register_basic = function(fullname) {
 		if(typeof fullname == 'undefined' || fullname == null || fullname == '') return;
 		
 		login.register_basic_fullname(fullname, function (data) {
+			if( data.retcode === 0) {
 				$state.go('register_basic_avatar',{userId: $stateParams.userId});
+			}
 		});
 	}
 })
-.controller('RegisterBasicAvatarCtrl', function($scope, $state, $stateParams, $http, $cordovaCamera, login, config) { // this will have the upload picture. 
+
+.controller('RegisterBasicAvatarCtrl', function($scope, $state, $stateParams, $http, $cordovaCamera, $ionicActionSheet, login, config) { // this will have the upload picture. 
 	var avatarURI;
 	
-	$scope.choose_image = function(type) {
+	function _choose_image(type) {
 		if(config.is_device) {
 			document.addEventListener('deviceready', function () {
 				var options = {
@@ -75,49 +96,72 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	}
 	
 	$scope.register_basic = function() {
-		login.register_basic_avatar($stateParams.userId, avatarURI, function (data) {		
-			login.init(function() {
+		login.register_basic_avatar(avatarURI, function (data) {
+			if( data.retcode === 0) {
 				$state.go('tab.main');
-			});
+			}
 		});
 	}
+	
+	$scope.showActionsheet = function(i) {
+		$ionicActionSheet.show({
+			buttons: [
+				{ text: 'Take Photo' },
+				{ text: 'Choose From Library' }
+			],
+			cancelText: 'Cancel',
+			cancel: function() {
+				console.log('CANCELLED');
+			},
+			buttonClicked: function(index) {
+				console.log('buttonClicked : ' + index);
+				switch (index) {
+					case 0: _choose_image(0); break;
+					case 1: _choose_image(1); break;
+				} 
+				return true;
+			}
+		});
+	};
 })
 
-/////////////////////////////////////////////////////
-//////////////////// Tab Main View //////////////////
-/////////////////////////////////////////////////////
-
-/**** MainCtrl ************************
-1. Property:
-- $scope.PostList : feed by: init_radar_get_post_list(for previous Posts) OR PubNub subscribe channels (for current & future Post)
-- $scope.FavouriteList:
-2. Methods
-	- gui_favourite_icon
-	- gui_card
-3. init()
-	1. check login
-	2. create '$scope.add_favourite_modal'
-	3. create '$scope.create_post_modal'
-4. _private_functions
-- _serialize
-****************************************/
-.controller('MainCtrl', function($rootScope, $scope, $http,  $location, $ionicModal, $state, $cordovaGeolocation, login, main, post, config) {
+/*****************************************************************************
+///////////////////////////////// Tab Main View //////////////////////////////
+*****************************************************************************/
+.controller('MainCtrl', function($rootScope, $scope, $http, $ionicScrollDelegate,  $location, 
+			$ionicModal, $state, $cordovaGeolocation, $cordovaCamera, $cordovaImagePicker, 
+			$timeout, $ionicActionSheet, login, main, post, config) {
+			
 	/***  init function  ***/ 
+	$scope.is_show_infinite_scroll = false;	
+	$scope.message = {};
+	$scope.message.Content = '';
+	$scope.photos = [{'img': 'img/avatar.png' , 'title' : 'asd asd as dsadasd', 'filename' : 'XYZasdofjasdfsfaewrf'}];
+	var photos_file = [];
+	var photos_temp = [];
+	
 	function init() {
 		if(!login.checklogin()) {
 			$state.go('signin');
 		} else {
 			$scope.PostList =  main.list;
 			$scope.FavouriteList = main.fav_list;
+			$scope.myid = login.my_id;
 			if(!login.is_init) {
-				login.init(function(){
-					
+				login.init(function(){				
+					main.init_radar_here(login.token, function() {											
+						temp = $scope.$on('postlistevent', function() { 
+							console.log('set $scope.is_show_infinite_scroll = true;');
+							$scope.is_show_infinite_scroll = true;
+							
+							temp();
+						});
+					});
 				});
 			}
-			
 		}
 		
-		/* modal popup */ 
+		///// define modal pop-up ////// 
 		$ionicModal.fromTemplateUrl('popup-add-favourite.html', {
 			scope: $scope,
 			animation: 'slide-in-left'
@@ -133,8 +177,8 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		});
 	}
 	
-	/***  define GUI builder function  ***/ 
-	$scope.gui_favourite_icon = function(fav) {
+	///// Utility ////
+	$scope.getFavouriteIcon = function(fav) {
 		if(fav.n === 'Home') {
 			return 'ion-home';
 		} else if(fav.n === 'School') {
@@ -144,183 +188,213 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		}
 	}	
 
-	$scope.gui_get_avatar_path = function(filename) {
+	$scope.getAvatarPath = function(filename) {
 		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
 	}
 	
-	/*** define interactive (button click) ***/ 
-	
-	/*function _get_location(callback) {
-		var posOptions = {timeout: 10000, enableHighAccuracy: false};
-		$cordovaGeolocation
-		.getCurrentPosition(posOptions)
-		.then(function (position) {
-		  var lat  = position.coords.latitude
-		  var long = position.coords.longitude
-		  callback(lat,long);
-		}, function(err) {
-		  // error
-		});
-	}*/
-	
-	function _get_location(callback) { // for testing purpose
-		var lat = 1.297649, long = 103.850713;
-		callback(lat,long);
+	$scope.checkTop = function() {
+		console.log($ionicScrollDelegate.getScrollPosition().top);
 	}
 	
+	////////// Left side bar /////////////	
 	$scope.clickRadarHere = function() {
 		main.clear_radar();
-		_get_location(function(lat, long) {
-			main.init_radar_here(login.token, lat, long);
+		main.init_radar_here(login.token, function(){
+			temp = $scope.$on('postlistevent', function() { 
+				console.log('set $scope.is_show_infinite_scroll = true;');
+				$scope.is_show_infinite_scroll = true;
+				
+				temp();
+			});
 		});
 	}
 
 	$scope.clickRadarFavourite = function(id) {
 		main.clear_radar();
-		main.init_radar_fovourite(login.token, id);
-	}
-		
-	$scope.clickRadarMap = function() {
-		
+		main.init_radar_fovourite(login.token, id, function(){
+			temp = $scope.$on('postlistevent', function() { 
+				console.log('set $scope.is_show_infinite_scroll = true;');
+				$scope.is_show_infinite_scroll = true;
+				
+				temp();
+			});
+		});
 	}
 	
-	// button click
-	$scope.clickAddFavourite = function() {
+	///////////////// Favourite Modal ////////////
+	$scope.openAddFavouriteModal = function() {
 		$scope.add_favourite_modal.show();
 	}
 	
-	$scope._click_closeAddFavouriteModal = function() {
+	$scope.closeAddFavouriteModal = function() {
 		$scope.add_favourite_modal.hide();
 	};
-
 	
-	$scope._click_addFavourite = function(name) {
-		main.addFavourite(name, login.token, function(data) {
+	$scope.create_radar_favourite = function(name) {
+		main.create_radar_favourite(name, login.token, function(data) {
 			main.fav_list.push(data.fav);
 			$scope.add_favourite_modal.hide();
 		});
 	}
+		
+	/////////////// Create Post Modal ////////////////
+	function _take_photo() {
+		if(config.is_device) {
+			document.addEventListener('deviceready', function () {
+				var options = {
+				  quality: 100,
+				  destinationType: Camera.DestinationType.FILE_URI,
+				  sourceType: Camera.PictureSourceType.CAMERA,
+				  allowEdit: true,
+				  encodingType: Camera.EncodingType.JPEG,
+				  targetWidth: 800,
+				  popoverOptions: CameraPopoverOptions,
+				  saveToPhotoAlbum: false
+				};
+
+				$cordovaCamera.getPicture(options).then(function(imageURI) {
+					var tmp = {'img': results[i]};
+					$scope.photos.push(tmp);
+				}, function(err) {
+				  // error
+					console.log('Error to take picture from camera.');
+				});
+		  }, false);
+		} 
+	}
+		
+	function _get_photos() {
+		var options = {
+			maximumImagesCount: 5,
+			width: 800,
+			quality: 100
+		};
+
+		$cordovaImagePicker.getPictures(options)
+		.then(function (results) {
+			for (var i = 0; i < results.length; i++) {
+				console.log('Image URI: ' + results[i]);
+				var tmp = {'img': results[i]};
+				$scope.photos.push(tmp);
+			}
+		}, function(error) {
+			// error getting photos
+			console.log('Error to get picture from device.');
+		});
+	}
 	
-	$scope.clickCreateNew = function(title, type) {
+	$scope.openCreatePostModal = function(title, type) {
 		$scope.pop_up_name = title;
 		$scope.type = type;
 		$scope.create_post_modal.show();
+		
+		if(title === 'Upload Photos Gallery') { // this is default will be upload photos.
+			$ionicActionSheet.show({
+				buttons: [
+					{ text: 'Take Photo' },
+					{ text: 'Choose From Library' }
+				],
+				cancelText: 'Cancel',
+				cancel: function() {
+					console.log('CANCELLED');
+				},
+				buttonClicked: function(index) {
+					console.log('buttonClicked : ' + index);
+					switch (index) {
+						case 0: _take_photo(); break;
+						case 1: _get_photos(); break;
+					} 
+					return true;
+				}
+			});
+		}
 	}
-	
-	$scope._click_createPost = function(message) {
-		post.createPost(message, login.token, main.current_channels[0], $scope.type, function(data) {
-			$scope.create_post_modal.hide();
-		});
-	}
-	
-	$scope._click_closeCreateNewModal = function() {
+		
+	$scope.closeCreatePostModal = function() {
+		// v-comment: clean up before close. have to check 
 		$scope.create_post_modal.hide();
 	};
 	
-	$scope._click_Like = function(id, index) {
-		post.createPostLike(id, login.token, function(data) {
-			console.log($scope.PostList[index]);
-			$scope.PostList[index].i.l += 1;
-			//$scope.update();
-		});
-	};
+	$scope.deleteItem = function(index) {
+		console.log('deleteItem');
+		$timeout( function() {
+			$scope.photos.splice(index,1);
+		}, 300);
+	}
 	
-	$scope._click_Comment = function(post_id) { // actually go to detail page
-		$state.go('tab.m_detail', {detailId: post_id});
-	};
-
-	
-	$scope._click_Relay = function(id, index) {
-		post.createPostRelay(id, login.token, main.current_channels[0],function(data) {
-			console.log($scope.PostList[index]);
-			$scope.PostList[index].i.r += 1;
-		});
-	};
-	
-	init();
-})
-/**** m_DetailCtrl : Main -> Detail Controller ************************
-1. Property:
-
-2. Methods
-
-3. init()
-
-4. _private_functions
-
-****************************************/
-.controller('m_DetailCtrl', function($scope, $state, $stateParams, $http, config, login, post) {
-	$scope.page = 0;
-	function init() {
-		if(!login.checklogin()) {
-			$state.go('signin');
+	/////////// create_post ////////////
+	function _create_post(message) {
+		if (photos_temp.length == 0) {
+			post.create_post(message, login.token, main.current_channels[0], $scope.type, photos_file, function(data) {
+				// // v-comment: remove waiting icon... clean up before close. 
+				$scope.message.Content = "";
+				$scope.photos = [];
+				$scope.create_post_modal.hide();
+				photos_file = [];
+				photos_temp = [];
+			});
 		} else {
-			post.init_post_detail($stateParams.detailId, login.token, $scope);
+			var photo = photos_temp.pop();
+			post.upload_post_photo(photo, function(data) {
+				// upload a photo success.
+				photos_file.push(data.file);
+				_create_post();
+			});
 		}
 	}
 	
-	$scope.gui_get_avatar_path = function(filename) {
-		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
+	$scope.create_post = function(message) {
+		// v-comment: put-up waiting icon... 
+		for( var i = 0; i < $scope.photos.length; i++ ) {
+			photos_temp.push($scope.photos[i].img); 
+		}
+		
+		_create_post(message);
 	}
 	
-	$scope.gui_get_title = function(filename) {
-		if($scope.myitem.type === 1) return "Answer detail";
-		return "Post detail";
-	}
-	
-	$scope._click_Like = function(id) {
-		post.createPostLike(id, login.token, function(data) {
-			$scope.myitem.i.l += 1;
+	////////////// Interactive Function ////////////////
+	$scope.clickLike = function(myitem) {
+		if(!myitem.i.my_l)
+		post.create_post_like(myitem.id, login.token, function(data) {
+			console.log(myitem);
+			myitem.i.l += 1;
+			myitem.i.my_l = true;
+			//$scope.$apply();
 		});
 	};
 	
-	$scope._click_Relay = function(id) {
-		post.createPostRelay(id, login.token, function(data) {
-			$scope.myitem.i.r += 1;
+	$scope.clickComment = function(myitem) { // actually go to detail page
+		$state.go('tab.m_detail', {detailId: myitem.id});
+	};
+
+	
+	$scope.clickRelay = function(myitem) {
+		if(!myitem.i.my_r)
+		post.create_post_relay(myitem.id, login.token, main.current_channels[0],function(data) {
+			myitem.i.r += 1;
+			myitem.i.my_r = true;
+			//$scope.$apply();
 		});
 	};
 	
-	$scope._click_createComment = function(comment) { // this is to submit comment
-		post.createPostComment($stateParams.detailId, comment, login.token, function(data) {
-			if(data.retcode === 0) {
-				var temp = data.content;
-				$scope.comments.unshift(temp);
-				comment.Content = '';
-			}
-		})
+	////////////// Infinity Load ///////////
+	$scope.load_more_post = function() {	
+		console.log('load_more_post @ benchmark_id = ' + main.benchmark_id);
+		
+		main.load_more_post(login.token, function(is_more){
+			if(!is_more)
+				$scope.is_show_infinite_scroll = false;
+			$scope.$broadcast('scroll.infiniteScrollComplete');
+		});
 	};
 	
 	init();
 })
-.controller('m_CommentCtrl', function($scope, $state) {
 
-})
-.controller('m_ChatroomCtrl', function($scope, $state) {
 
-})
-.controller('m_ProfileCtrl', function($scope, $state, $stateParams, login, profile, config) {
-	if(!login.checklogin()) {
-		$state.go('signin');
-	} else {
-		$scope.Profile = {};
-		$scope.ProfilePostList =  [];
-		profile.get_profile_header($scope, login.token, $stateParams.profileId);
-		profile.get_profile_post_list($scope, login.token, $stateParams.profileId);
-	}
-	
-	$scope.gui_get_avatar_path = function(filename) {
-		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
-	}
-	
-	$scope.gui_get_profile_name = function() {
-		if($scope.Profile.fullname !== null) return '('+$scope.Profile.nickname+') ' + $scope.Profile.fullname;		
-		
-		return $scope.Profile.nickname;
-	}
-	
-})
-
-///////////////////////////////////////////////////
+/*****************************************************************************
+/////////////////////////////// Tab Notify View //////////////////////////////
+*****************************************************************************/
 .controller('NotifyCtrl', function($rootScope, $scope, $location, $state, login, notification, config) {
 	
 	// $scope.groups = [];
@@ -349,122 +423,428 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		// return $scope.shownGroup === group;
 	// };
 	
-	/***  init function  ***/ 
 	function init() {
 		if(!login.checklogin()) {
 			$state.go('signin');
 		} else {
 			$scope.list =  notification.list;
+			notification.update_last_notification_id();
 		}
 	}
 	
-	$scope.gui_get_avatar_path = function(filename) {
+	$scope.getAvatarPath = function(filename) {
 		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
 	}
 	
-	init();
-	
+	init();	
 })
-.controller('n_DetailCtrl', function($scope, $state, $stateParams, config, login, post) {
-	$scope.page = 1;
+
+/*****************************************************************************
+/////////////////////////////////// Tab Me View //////////////////////////////
+*****************************************************************************/
+.controller('MeCtrl', function($scope, $state, $stateParams, me, login) {  
 	function init() {
 		if(!login.checklogin()) {
 			$state.go('signin');
-		} else {
-			post.init_post_detail($stateParams.detailId, login.token, $scope);
 		}
 	}
 	
-	$scope.gui_get_avatar_path = function(filename) {
-		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
-	}
-	
-	$scope._click_Like = function(id) {
-		post.createPostLike(id, login.token, function(data) {
-			$scope.myitem.i.l += 1;
-		});
-	};
-	
-	$scope._click_Relay = function(id) {
-		post.createPostRelay(id, login.token, function(data) {
-			$scope.myitem.i.r += 1;
-		});
-	};
-	
-	$scope._click_createComment = function(comment) { // this is to submit comment
-		post.createPostComment($stateParams.detailId, comment, login.token, function(data) {
-			if(data.retcode === 0) {
-				var temp = data.content;
-				$scope.comments.unshift(temp);
-				comment.Content = '';
-			}
-		})
-	};
-	
-	init();
-})
-.controller('n_CommentCtrl', function($scope, $state) {
-
-})
-.controller('n_ChatroomCtrl', function($scope, $state) {
-
-})
-.controller('n_ProfileCtrl', function($scope, $state, $stateParams, config, login, profile) {
-	if(!login.checklogin()) {
-		$state.go('signin');
-	} else {
-		$scope.Profile = {};
-		$scope.ProfilePostList =  [];
-		profile.get_profile_header($scope, login.token, $stateParams.profileId);
-		profile.get_profile_post_list($scope, login.token, $stateParams.profileId);
-	}
-	
-	$scope.gui_get_avatar_path = function(filename) {
-		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
-	}
-	
-	$scope.gui_get_profile_name = function() {
-		if($scope.Profile.fullname !== null || typeof $scope.Profile.fullname !== 'undefined') return '('+$scope.Profile.nickname+') ' + $scope.Profile.fullname;		
-		
-		return $scope.Profile.nickname;
-	}
-})
-
-///////////////////////////////////////////////////
-.controller('MeCtrl', function($scope, $state, $stateParams, me, login) {  
 	$scope.logout = function() {
 		login.logout();
 		$state.go('signin');
 	};  
+	
+	init();
 })
-.controller('me_DetailCtrl', function($scope, $state) {
-
-})
-.controller('me_CommentCtrl', function($scope, $state) {
-
-})
-.controller('me_ChatroomCtrl', function($scope, $state) {
-
-})
-.controller('me_ProfileCtrl', function($scope, $state) {
-
-})
-
 .controller('me_MyProfileCtrl', function($scope, $state) {
 
 })
-.controller('me_MyPostlistCtrl', function($scope, $state) {
-
+.controller('me_MyPostlistCtrl', function($scope, $state, $ionicActionSheet, me, post, login, config) {
+	$scope.PostList;
+	$scope.is_show_infinite_scroll = false;
+	$scope.tab = 'me';
+	$scope.myid = login.my_id;
+	
+	function init() {
+		$scope.PostList =  me.list;		
+		if(!me.is_init) {
+			$scope.is_show_infinite_scroll = true;
+		} else {
+			if(me.benchmark_id > 0) {
+				$scope.is_show_infinite_scroll = true;
+			} else {
+				$scope.is_show_infinite_scroll = false;
+			}
+		}		
+	}
+	
+	$scope.load_more_post = function() {
+		me.get_my_post_list(login.token, function(is_more) {
+			if(is_more) {
+				$scope.is_show_infinite_scroll = true;
+			} else {
+				$scope.is_show_infinite_scroll = false;
+			}
+			
+			$scope.$broadcast('scroll.infiniteScrollComplete');
+		});
+	}
+	
+	$scope.showActionsheet = function(i) {
+    
+		$ionicActionSheet.show({
+		  destructiveText: 'Delete',
+		  cancelText: 'Cancel',
+		  cancel: function() {
+			console.log('CANCELLED');
+		  },
+		  destructiveButtonClicked: function() {
+			console.log('DESTRUCT ' + i);
+			return true;
+		  }
+		});
+	};
+	///////////////////////////////////
+    
+	$scope.clickComment = function(myitem) { // actually go to detail page
+		$state.go('tab.me_detail', {detailId: myitem.id});
+	};
+	
+	$scope.clickLike = function(myitem) {
+		if(!myitem.i.my_l)
+		post.create_post_like(myitem.id, login.token, function(data) {
+			console.log(myitem);
+			myitem.i.l += 1;
+			myitem.i.my_l = true;
+			//$scope.$apply();
+		});
+	};
+	
+	init();
 })
 .controller('me_MyHistoryCtrl', function($scope, $state) {
 
 })
-.controller('me_SettingsCtrl', function($scope, $state) {
 
+.controller('me_SettingsCtrl', function($scope, $state, $ionicActionSheet, $cordovaCamera, me, login, config) {
+	$scope.Profile = {nickname : 'hello'};
+	$scope.is_change_update = false;
+	function init() {
+		me.get_my_profile_header(login.token, function(result) {
+			console.log('me.get_my_profile_header success');
+			$scope.Profile.nickname = me.Profile.nickname;
+			$scope.Profile.fullname = me.Profile.fullname;
+			$scope.Profile.avatar = me.Profile.avatar;				
+		});
+	}
+		
+	$scope.check_change = function() {
+		if($scope.Profile.nickname != me.Profile.nickname || $scope.Profile.fullname != me.Profile.fullname) {
+			$scope.is_change_update = true;
+		} else {
+			$scope.is_change_update = false;
+		}
+	}
+	
+	$scope.getAvatarPath = function(filename) {
+		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
+	}
+	
+	function _choose_image(type) {
+		if(config.is_device) {
+			document.addEventListener('deviceready', function () {
+				var options = {
+				  quality: 50,
+				  destinationType: Camera.DestinationType.FILE_URI,
+				  sourceType: type === 0 ? Camera.PictureSourceType.CAMERA : Camera.PictureSourceType.PHOTOLIBRARY ,
+				  allowEdit: true,
+				  encodingType: Camera.EncodingType.JPEG,
+				  targetWidth: 128,
+				  targetHeight: 128,
+				  popoverOptions: CameraPopoverOptions,
+				  saveToPhotoAlbum: false
+				};
+
+				$cordovaCamera.getPicture(options).then(function(imageURI) {
+				  var image = document.getElementById('myImage');
+				  image.src = imageURI;
+				  // upload immediately - call 
+					login.register_basic_avatar(imageURI, function (data) {		
+						console.log("Upload avatar success");
+					});
+				}, function(err) {
+				  // error
+					console.log('Error to get picture from device.');
+				});
+		  }, false);
+		} 
+	}
+	
+	$scope.showActionsheet = function(i) {
+		$ionicActionSheet.show({
+			buttons: [
+				{ text: 'Take Photo' },
+				{ text: 'Choose From Library' }
+			],
+			cancelText: 'Cancel',
+			cancel: function() {
+				console.log('CANCELLED');
+			},
+			buttonClicked: function(index) {
+				console.log('buttonClicked : ' + index);
+				switch (index) {
+					case 0: _choose_image(0); break;
+					case 1: _choose_image(1); break;
+				} 
+				return true;
+			}
+		});
+	};
+	
+	$scope.update_profile_basic = function() {
+		if($scope.Profile.nickname != me.Profile.nickname) {
+			me.change_my_basic_nickname(login.token, $scope.Profile.nickname, function(data) {
+				if ($scope.Profile.fullname != me.Profile.fullname) {
+					me.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
+						console.log("update_profile_basic finish change_my_basic_nickname");
+						$scope.is_change_update = false;
+					}); 
+				} else {
+					console.log("update_profile_basic finish change_my_basic_fullname");
+					$scope.is_change_update = false;
+				}
+			});
+		} else if ($scope.Profile.fullname != me.Profile.fullname) {
+			me.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
+				console.log("update_profile_basic finish change_my_basic_nickname");
+				$scope.is_change_update = false;
+			}); 
+		} else {
+			console.log("update_profile_basic finish change_my_basic_fullname");
+			$scope.is_change_update = false;
+		}
+	}
+	
+	init();
+})
+.controller('me_SettingsChangepasswordCtrl', function($scope, $state, $window, me, login) {
+	$scope.is_change_update = false;
+	$scope.Password = {old_password : '', new_password : '', new_password_again : ''};
+	$scope.check_change = function() {
+		if($scope.Password.old_password !== '') {
+			if($scope.Password.new_password !== '' && $scope.Password.new_password == $scope.Password.new_password_again) {
+				$scope.is_change_update = true
+			} else {
+				$scope.is_change_update = false;
+			}
+		} else {
+			$scope.is_change_update = false;
+		}
+	}
+	
+	$scope.change_my_password = function() {
+		login.change_my_password(login.token, $scope.Password.old_password, $scope.Password.new_password, function(data) {
+			console.log('change_my_password finish ' + JSON.stringify(data));
+			$scope.Password = {old_password : '', new_password : '', new_password_again : ''};
+		});
+	}
 })
 .controller('me_PolicyCtrl', function($scope, $state) {
 
 })
 .controller('me_HelpCtrl', function($scope, $state) {
 
+})
+
+
+/*****************************************************************************
+/////////////////////////////////// Detail Controller ////////////////////////
+*****************************************************************************/
+
+.controller('DetailCtrl', function($scope, $state, $stateParams, $http, $ionicModal, config, login, main, post) {
+	$scope.tab = 'main'; // tab "main" = 0 -- use for navigation purpose
+	$scope.current_comment_detail;
+	function isMyPost(ownerid) {
+		if(ownerid == login.my_id) return true;
+		return false;
+	}
+
+	function init() {
+		if(!login.checklogin()) {
+			$state.go('signin');
+		} else {
+			$scope.myid = login.my_id;
+			post.get_post_detail($stateParams.detailId, login.token, function(myitem, comments) {
+				$scope.myitem = myitem;
+				$scope.comments = comments;
+			});
+			
+			///// define modal pop-up ////// 
+			$ionicModal.fromTemplateUrl('comment-detail.html', {
+				scope: $scope,
+				animation: 'slide-in-right'
+			}).then(function(modal) {
+				$scope.comment_detail_modal = modal;
+			});
+			
+			if($state.$current.name === 'tab.m_detail') {
+				$scope.tab = 'main';
+			} else if($state.$current.name === 'tab.n_detail') {
+				$scope.tab = 'notify';
+			} else if($state.$current.name === 'tab.me_detail') {
+				$scope.tab = 'me';
+			}
+		}
+	}
+	
+	$scope.getAvatarPath = function(filename) {
+		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
+	}
+	
+	$scope.getHeaderTitle = function() {
+		if($scope.myitem.type === 1) return "Answer detail";
+		return "Post detail";
+	}
+	
+	//////// Interactive /////////////
+	$scope.clickLike = function(myitem) {
+		if(!myitem.i.my_l)
+		post.create_post_like(myitem.id, login.token, function(data) {
+			myitem.i.l += 1;
+			myitem.i.my_l = true;
+		});
+	};
+	
+	$scope.clickRelay = function(myitem) {
+		if(!myitem.i.my_r)
+		post.create_post_relay(myitem.id,  login.token, main.current_channels[0], function(data) {
+			myitem.i.r += 1;
+			myitem.i.my_r = true;
+		});
+	};
+	
+	$scope.clickComment = function(id) {
+
+	};
+	
+	$scope.submitComment = function(comment) { // this is to submit comment
+		console.log('$scope.myitem.type' + $scope.myitem.type);
+		if($scope.myitem.type === 0) {
+			post.create_post_comment($stateParams.detailId, comment, login.token, function(data) {
+				if(data.retcode === 0) {
+					var temp = data.content;
+					$scope.comments.unshift(temp);
+					comment.Content = '';
+				}
+			})
+		} else { // $scope.myitem.type === 1
+			post.create_question_answer($stateParams.detailId, comment, login.token, function(data) {
+				if(data.retcode === 0) {
+					var temp = data.content;
+					$scope.comments.unshift(temp);
+					comment.Content = '';
+				}
+			})		
+		}
+
+	};
+	
+	//////////////////////////////////
+	$scope.openCommentDetailModal = function(comment) {
+		$scope.current_comment_detail = comment;
+		$scope.comment_detail_modal.show();
+	}
+	
+	$scope.closeCommentDetailModal = function() {
+		$scope.comment_detail_modal.hide();
+	}
+	
+	$scope.gotoProfile = function(id) {
+		if($state.$current.name === 'tab.m_detail') {
+			$state.go('tab.m_profile',{profileId: id});
+		} else if($state.$current.name === 'tab.n_detail') {
+			$state.go('tab.n_profile',{profileId: id});
+		} else if($state.$current.name === 'tab.me_detail') {
+			$state.go('tab.me_profile',{profileId: id});
+		}
+	}
+	
+	init();
+})
+
+/*****************************************************************************
+/////////////////////////////////// Profile Controller ///////////////////////
+*****************************************************************************/
+
+
+.controller('ProfileCtrl', function($scope, $state, $stateParams, login, profile, config) {
+	var benchmark_id = 0;
+	$scope.is_show_infinite_scroll = false;
+	
+	if(!login.checklogin()) {
+		$state.go('signin');
+	} else {
+		$scope.Profile = {};
+		$scope.ProfilePostList =  [];
+		
+		console.log('$state.$current.name === ' + $state.$current.name);
+		if($state.$current.name === 'tab.m_profile') {
+			$scope.tab = 'main';
+		} else if($state.$current.name === 'tab.n_profile') {
+			$scope.tab = 'notify';
+		} else if($state.$current.name === 'tab.me_profile') {
+			$scope.tab = 'me';
+		}
+		
+		profile.get_profile_header(login.token, $stateParams.profileId, function(data) {			
+			if(data.retcode === 0) {
+				$scope.Profile = data.profile;
+			}
+		});
+		profile.get_profile_post_list(login.token, $stateParams.profileId, benchmark_id, function(data) {
+			if(data.retcode === 0) {
+				for (var i in data.post_list) {
+					$scope.ProfilePostList.unshift(data.post_list[i]);			  
+				}
+				
+				if(data.post_list.length < 3) {
+					benchmark_id = -1;
+					$scope.is_show_infinite_scroll = false;
+				} else {				
+					benchmark_id = data.post_list[data.post_list.length - 1].id;
+					$scope.is_show_infinite_scroll = true;
+				}
+			}
+		});
+	}
+	
+	$scope.getAvatarPath = function(filename) {
+		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
+	}
+	
+	$scope.getProfileName = function() {
+		if($scope.Profile.fullname !== null) return '('+$scope.Profile.nickname+') ' + $scope.Profile.fullname;		
+		
+		return $scope.Profile.nickname;
+	}
+	
+	$scope.load_more_post = function() {
+		profile.get_profile_post_list(login.token, $stateParams.profileId, benchmark_id, function(data) {
+			if(data.retcode === 0) {
+				for (var i in data.post_list) {
+					$scope.ProfilePostList.unshift(data.post_list[i]);			  
+				}
+				
+				if(data.post_list.length < 3) {
+					benchmark_id = -1;
+					$scope.is_show_infinite_scroll = false;
+					$scope.$broadcast('scroll.infiniteScrollComplete');
+				} else {				
+					benchmark_id = data.post_list[data.post_list.length - 1].id;
+					$scope.is_show_infinite_scroll = true;
+					$scope.$broadcast('scroll.infiniteScrollComplete');
+				}
+			}
+		});
+	}
 })

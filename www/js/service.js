@@ -1,7 +1,7 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
 	this.is_localhost = true;
-	this.is_device = true;
+	this.is_device = false;
 	this.nex_server_ip = (this.is_localhost == false) ? 'http://107.167.183.96:5000/' : 'http://127.0.0.1:5000/';
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -15,6 +15,17 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		'service_me' :  true
 	}
 })
+
+.service('util', function(config){
+	this.is_null = function(value) {
+		return typeof value == 'undefined' || value == null;
+	}
+	
+	this.is_blank = function(string) {
+		return typeof string == 'undefined' || string == null || string == '';
+	}
+})
+
 .service('vlog', function(config){
 	this.log = function(msg) { // same as console but we make it as one clue for easier deal with.
 		console.log(msg);
@@ -28,23 +39,64 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		console.log('[ERROR]' + err);
 	}
 })
-.service('post', function($rootScope, $http, config, vlog){
-	this.get_latest_post_list = function(channels, page, callback) {
+
+/*****************************************************************************
+///////////////////////////////// "post" /////////////////////////////////////
+*****************************************************************************/
+.service('post', function($rootScope, $http, $cordovaFileTransfer, config, vlog){
+	/***  private functions ***/ 
+	function _serialize(obj) {
+		var str = [];
+		for(var p in obj){
+			if (Array.isArray( obj[p])) {
+				for(var i in obj[p])
+					str.push(encodeURIComponent(p) + '[]=' + encodeURIComponent(obj[p][i]));
+			} else {
+				str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+			}
+		}
+		return str.join('&');
+	}
+	
+	this.get_latest_post_list = function(token, channels, from_id, callback) {
 		var list_channels = '';
 		var i = 0;
 		while (i < channels.length) {
 			list_channels+='&channels[]='+channels[i];
 			i++;
 		}
-		var url = config.nex_server_ip+'get_post_list?callback=JSON_CALLBACK' + list_channels + '&page=' + page;
+		var url = config.nex_server_ip+'get_post_list?callback=JSON_CALLBACK' + list_channels + '&from_id=' + from_id + '&token=' + token;
 		var request = $http.jsonp(url);		
 		request.success(function(data) {
 			vlog.info('SUCCESS get_latest_post_list return: ' + JSON.stringify(data), 'service_post');
 			callback(data.posts);
 		});
 	}
+	
+	this.upload_post_photo = function(img_uri, callback) {
+		var options = {};
+		options.params = {
+			'Token': self.token
+		};
 		
-	this.createPost = function(message, token, current_channel, post_type, callback) {
+		var url_upload_post_photo = (config.is_localhost) ? '/upload_post_photo' : config.nex_server_ip + 'upload_post_photo';
+		document.addEventListener('deviceready', function () {
+			$cordovaFileTransfer.upload(url_upload_post_photo, img_uri, options)
+			  .then(function(results) {
+                    var data = JSON.parse(results.response);
+                    vlog.log('Success transfer file ' + JSON.stringify(data));
+                    //if(results) {
+						callback(data);
+                    //}
+			  }, function(err) {
+					vlog.log('Error transfer file ' + JSON.stringify(err));
+			  }, function (progress) {
+					vlog.log('Progress transfer file ' + JSON.stringify(progress));
+			  });
+		}, false);
+	}
+		
+	this.create_post = function(message, token, current_channel, post_type, photos, callback) {
 		var url;		
 		if(post_type === 1) {
 			url = (!config.is_device) ? '/create_post_question' : config.nex_server_ip + 'create_post_question';
@@ -55,13 +107,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		$http({
 			method  : 'POST',
 			url     : url,
-			transformRequest: function(obj) {
-				var str = [];
-				for(var p in obj)
-				str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
-				return str.join('&');
-			},
-			data    : { Channels: current_channel, Title : message.Title, Content: message.Content, Token: token},  // pass in data as strings	
+			data    : _serialize({ Channels: current_channel, Title : message.Title, Content: message.Content, photos : photos, Token: token}),  // pass in data as strings	
 			headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 			}).success(function(data) {
 				vlog.info('SUCCESS createPost return: ' + JSON.stringify(data), 'service_post');
@@ -69,7 +115,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			});
 	}
 	
-	this.createPostLike = function(id, token, callback) {
+	this.create_post_like = function(id, token, callback) {
 		var url = (!config.is_device) ? '/create_post_like' : config.nex_server_ip + 'create_post_like';
 		$http({
 		method  : 'POST',
@@ -88,7 +134,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	this.createPostRelay = function(id, token, current_channel, callback) {
+	this.create_post_relay = function(id, token, current_channel, callback) {
 		var url = (!config.is_device) ? '/create_post_relay' : config.nex_server_ip + 'create_post_relay';
 		$http({
 		method  : 'POST',
@@ -107,7 +153,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	this.createPostComment = function(id, comment, token, callback) {
+	this.create_post_comment = function(id, comment, token, callback) {
 		var url = (!config.is_device) ? '/create_post_comment' : config.nex_server_ip + 'create_post_comment';		
 		$http({
 		method  : 'POST',
@@ -126,40 +172,57 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	this.init_post_detail = function(id, token, $scope) {
+	this.create_question_answer = function(id, comment, token, callback) {
+		var url = (!config.is_device) ? '/create_question_answer' : config.nex_server_ip + 'create_question_answer';		
+		$http({
+		method  : 'POST',
+		url     : url,
+		transformRequest: function(obj) {
+			var str = [];
+			for(var p in obj)
+			str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+			return str.join('&');
+		},
+		data    : { id: id, Token: token, content : comment.Content},  // pass in data as strings	
+		headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
+		}).success(function(data){
+			vlog.info('SUCCESS createQuestionAnswer return: ' + JSON.stringify(data), 'service_post');
+			callback(data);
+		});
+	}
+	
+	this.get_post_detail = function(id, token, callback) {
 		var url = config.nex_server_ip+'get_post_detail?callback=JSON_CALLBACK&id='+ id +'&token='+ token;
 		var request = $http.jsonp(url);		
 		request.success(function(data) {
+			
 			if(data.retcode === 0) {
-				$scope.myitem = data.post_detail;
-				$scope.title = $scope.myitem.type === 1 ? "Answer Detail" : "Post Detail";
+				var myitem = data.post_detail;
+				
 				url = config.nex_server_ip+'get_post_comment_list?callback=JSON_CALLBACK&id='+ id +'&token='+ token;
 				request = $http.jsonp(url);	
 				request.success(function(data1) {
 					if(data1.retcode === 0) {
-						vlog.info('SUCCESS init_post_detail return: ' + JSON.stringify(data1), 'service_post');
+						vlog.info('SUCCESS init_post_detail return: ' + JSON.stringify(data1), 'service_post');						
+						var comments = data1.comments;
 						
-						$scope.comments = data1.comments;
+						callback(myitem, comments);
 					}
 				});
 			}
 		});
 	}
+
 })
-/*********Signin/Signup/Init*********
-1. Global variable
-- token
-- is_init
-2. Services -> API ?
-- signinup(username, password)	-> signinup: to signin/up with 
-- init		-> init	 
-3. Services = processing ?
-- check login: to check localStorage if token already exist.
-**************************************/
+
+/*****************************************************************************
+///////////////////////////////// "login" ////////////////////////////////////
+*****************************************************************************/
 .service('login', function($rootScope, $http, $window, $cordovaFileTransfer, $cordovaGeolocation, config, main, notification, vlog){
 	var self = this;
-	var key = 'nex_token';
+	var key = 'nex_token', key_my_id = 'nex_my_id';
 	self.token = null;
+	self.my_id = null;
 	self.is_init = false;
 	
 	/***  private functions ***/ 
@@ -180,6 +243,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		var _token = $window.localStorage[key];
 		if(typeof _token != 'undefined' && _token != null){		
 			self.token = _token;
+			self.my_id = $window.localStorage[key_my_id];
 			return true;
 		} else {
 			return false;
@@ -192,7 +256,9 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		request.success(function(data) {
 			if(data.retcode === 0) {
 				$window.localStorage[key] = data.token;
+				$window.localStorage[key_my_id] = data.id;
 				self.token = data.token;
+				self.my_id = data.id;
 				$scope.$emit('loginevent', data);
 			} else {
 				$scope.$emit('loginevent', data);
@@ -200,53 +266,24 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	/*this.register_basic = function(id, avatarURI, nickname, callback){ // upload image		
-		if(config.is_localhost || typeof avatarURI == 'undefined') {
-			var url = (!config.is_device) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
-			$http({
+		
+	this.change_my_password = function(token, old_password, new_password, callback) {
+		var url = (!config.is_device) ? '/change_my_password' : config.nex_server_ip + 'change_my_password';
+		$http({
 			  method  : 'POST',
 			  url     : url,
-			  data    : _serialize({ id: id, nickname : nickname}),  // pass in data as strings	
+			  data    : _serialize({ Token: token, fullname : name, old_password : old_password, new_password : new_password }),  // pass in data as strings	
 			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 			 }).success(function(data) {
 				if(data.retcode === 0) {
 					$window.localStorage[key] = data.token;
+					$window.localStorage[key_my_id] = data.id;
 					self.token = data.token;
-					callback(data);
+					self.my_id = data.id;
 				}
+				callback(data);
 			});
-		} else {
-			var options = {};
-			//var url_avatar = (config.is_localhost) ? '/signup_basic_avatar_upload' : config.nex_server_ip + 'signup_basic_avatar_upload';
-			var url_avatar = 'http://'
-			document.addEventListener('deviceready', function () {
-				$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
-				  .then(function(data) {
-						console.log('Success transfer file ' + JSON.stringify(data));
-						//if(data.retcode === 0) {
-							var url = (!config.is_device) ? '/signup_basic' : config.nex_server_ip + 'signup_basic';
-							$http({
-							  method  : 'POST',
-							  url     : url,
-							  data    : _serialize({ id: id, avatar : data, nickname : nickname}),  // pass in data as strings	
-							  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-							 }).success(function(data) {
-								if(data.retcode === 0) {
-									$window.localStorage[key] = data.token;
-									self.token = data.token;
-									callback(data);
-								}
-							});
-						//}
-				  }, function(err) {
-					// Error
-				  }, function (progress) {
-					// constant progress updates
-				  });
-			}, false);
-		}
-
-	}*/
+	}
 	
 	this.register_basic_nickname = function(id, nickname, callback) {
 		var url = (!config.is_device) ? '/signup_basic_nickname' : config.nex_server_ip + 'signup_basic_nickname';
@@ -258,7 +295,9 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		 }).success(function(data) {
 			if(data.retcode === 0) {
 				$window.localStorage[key] = data.token;
+				$window.localStorage[key_my_id] = data.id;
 				self.token = data.token;
+				self.my_id = data.id;
 				callback(data);
 			}
 		});
@@ -278,19 +317,26 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	this.register_basic_avatar = function(id, avatarURI, callback) {
+	this.register_basic_avatar = function(avatarURI, callback) {
 		var options = {};
 		options.params = {
 			'Token': self.token
 		};
 		
-		var url_avatar = (config.is_localhost) ? '/signup_basic_avatar/'+id : config.nex_server_ip + 'signup_basic_avatar/'+id;
-		//var url_avatar = 'http://'
+		var url_avatar = (config.is_localhost) ? '/signup_basic_avatar' : config.nex_server_ip + '/signup_basic_avatar';
+        //var url_avatar = 'http://localhost:5000/files1/'+id;
 		document.addEventListener('deviceready', function () {
 			$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
-			  .then(function(data) {
-					vlog.log('Success transfer file ' + JSON.stringify(data));
-					callback(data);
+			  .then(function(results) {
+                    var data = JSON.parse(results.response);
+                    vlog.log('Success transfer file ' + JSON.stringify(data));
+                    if(data.retcode === 0) {
+                        $window.localStorage[key] = data.token;
+						$window.localStorage[key_my_id] = data.id;
+						self.token = data.token;
+						self.my_id = data.id;
+                        callback(data);
+                    }
 			  }, function(err) {
 					vlog.log('Error transfer file ' + JSON.stringify(err));
 			  }, function (progress) {
@@ -299,23 +345,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		}, false);
 	}
 	
-	function _get_location(callback) {
-		if(config.is_device) {
-			var posOptions = {timeout: 10000, enableHighAccuracy: false};
-			$cordovaGeolocation
-			.getCurrentPosition(posOptions)
-			.then(function (position) {
-			  var lat  = position.coords.latitude
-			  var lng = position.coords.longitude
-			  callback(lat,lng);
-			}, function(err) {
-			  // error
-			});
-		} else {
-			var lat = 1.3014259, lng = 103.839855;
-			callback(lat,lng);
-		}
-	}
+
 		
 	this.init = function(callback) {
 		var url = config.nex_server_ip+'init?callback=JSON_CALLBACK&token='+self.token;
@@ -326,9 +356,10 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				
 				// init main module
 				main.update_fav_list(data.fav_list);
-				_get_location(function(lat, lng) {
-					main.init_radar_here(self.token, lat, lng);
-				});
+				
+				// --> radar - default is radar_here
+				//main.init_radar_here(self.token);
+				
 				// init notification module
 				notification.init(self.token);
 				
@@ -339,31 +370,31 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	
 	this.logout = function() {
 		$window.localStorage.removeItem(key);
+		$window.localStorage.removeItem(key_my_id);
 		main.clear_radar();
 		main.clear();
 		notification.stop();
 		notification.clear();
+        self.is_init = false;
 	}
 
 })
-/*********init_radar_here/init_radar_favourite/init_radar_map/get_radar_latest_post*********
-1. Global variable
 
-2. Services -> API ?
-
-3. Services = processing ?
-
-**************************************/
+/*****************************************************************************
+///////////////////////////////// "main" /////////////////////////////////////
+*****************************************************************************/
 .service('main', function($rootScope, $http, PubNub, config, post, vlog){
 	var self = this;
 	self.list = [];	
 	self.fav_list = [];
-	self.current_channels = []; 	
+	self.current_channels = [];
+	self.benchmark_id = 0;
 	
 	this.clear = function() {
 		self.list = [];	
 		self.fav_list = [];
-		self.current_channels = null;
+		self.current_channels = [];
+		self.benchmark_id = 0;
 	}
 	
 	this.update_fav_list = function(list) {
@@ -373,6 +404,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	function _updatePostList(text, is_update) {
+        vlog.log('_updatePostList' + JSON.stringify(text));
 		if(Array.isArray(text)){
 			for (var i in text) {
 				//for(var j in self.list) {
@@ -387,6 +419,11 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 					self.list.unshift(text[i]);
 				//}
 			  
+			}
+			if(text.length < 10) {
+				self.benchmark_id = -1;
+			} else {				
+				self.benchmark_id = text[text.length - 1].id;
 			}
 		} else {
 			for(var j in self.list) {
@@ -410,6 +447,8 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		
 		if(is_update) {
 			$rootScope.$apply();
+		} else {
+			$rootScope.$broadcast('postlistevent');
 		}
 		//$scope.PostList.pop();
 	}
@@ -443,34 +482,68 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	  return 0;
 	}
 		
-	this.init_radar_here = function(token, lat, lng) {	// here
-		var url = config.nex_server_ip+'init_radar_here?callback=JSON_CALLBACK'+'&token='+token+'&lng='+lng+'&lat='+lat;
-		var request = $http.jsonp(url);	
-		myLatlng = new google.maps.LatLng(lat, lng);
-		
-		request.success(function(data) {
-			data.results.sort(_compare);
-			
-			var len = data.results.length;
-			var MAX_CHANNEL_NUMBER = 20;
-			var i = 0;
-
-			while(i < len && i < MAX_CHANNEL_NUMBER) {
-				self.current_channels.push(data.results[i].place_id);
-				i++;
-			}
-			
-			post.get_latest_post_list(self.current_channels, 0, function(message) {
+	function _get_location(callback) {
+		if(config.is_device) {
+			var posOptions = {timeout: 10000, enableHighAccuracy: false};
+			$cordovaGeolocation
+			.getCurrentPosition(posOptions)
+			.then(function (position) {
+			  var lat  = position.coords.latitude
+			  var lng = position.coords.longitude
+			  callback(lat,lng);
+			}, function(err) {
+			  // error
+			});
+		} else {
+			var lat = 1.3014259, lng = 103.839855;
+			callback(lat,lng);
+		}
+	}
+	
+	this.load_more_post = function(token, callback) {
+		if(self.benchmark_id === -1) {
+			callback(false);
+		} else {
+			post.get_latest_post_list(token, self.current_channels, self.benchmark_id, function(message) {
 				_updatePostList(message, false);
+				callback(true);
 			});
-			PubNub.ngSubscribe({ channel: self.current_channels });
-			$rootScope.$on(PubNub.ngMsgEv(self.current_channels), function(ngEvent, payload) {
-				_updatePostList(payload.message, true);
+		}
+	}
+	
+	this.init_radar_here = function(token, callback) {	// here
+		_get_location(function(lat, lng) { // first get the lat & lng
+			var url = config.nex_server_ip+'init_radar_here?callback=JSON_CALLBACK'+'&token='+token+'&lng='+lng+'&lat='+lat;
+			var request = $http.jsonp(url);	
+			myLatlng = new google.maps.LatLng(lat, lng);
+			
+			request.success(function(data) {
+				data.results.sort(_compare);
+				
+				var len = data.results.length;
+				var MAX_CHANNEL_NUMBER = 20;
+				var i = 0;
+
+				while(i < len && i < MAX_CHANNEL_NUMBER) {
+					self.current_channels.push(data.results[i].place_id);
+					i++;
+				}
+				
+				post.get_latest_post_list(token, self.current_channels, 0, function(message) {
+					_updatePostList(message, false);
+				});
+				
+				PubNub.ngSubscribe({ channel: self.current_channels });
+				$rootScope.$on(PubNub.ngMsgEv(self.current_channels), function(ngEvent, payload) {
+					_updatePostList(payload.message, true);
+				});
+				
+				callback();
 			});
-		});
+		});		
 	}
 
-	this.init_radar_fovourite = function(token, id) {	// favourite
+	this.init_radar_fovourite = function(token, id, callback) {	// favourite
 		var url = config.nex_server_ip+'init_radar_fovourite?callback=JSON_CALLBACK'+'&token='+token+'&id='+id;
 		var request = $http.jsonp(url);
 		 
@@ -480,6 +553,8 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			$rootScope.$on(PubNub.ngMsgEv(my_channel), function(ngEvent, payload) {
 					_updatePostList(payload.message, true);
 			});
+			
+			callback();
 		});
 	}
 	
@@ -497,7 +572,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		return str.join('&');
 	}
 	
-	this.addFavourite = function(name, token, callback) {
+	this.create_radar_favourite = function(name, token, callback) {
 		var url = (!config.is_device) ? '/create_radar_favourite' : config.nex_server_ip + 'create_radar_favourite';
 		$http({
 			  method  : 'POST',
@@ -509,13 +584,40 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			});
 	}
 })
-.service('notification', function($rootScope, $http, config){
+
+/*****************************************************************************
+////////////////////////////// "notification" ////////////////////////////////
+*****************************************************************************/
+.service('notification', function($rootScope, $http, $window, config, vlog){
 	var self = this;
 	var socket;
 	self.list = [];
+	self.last_notification_id;
 	
 	this.clear = function() {
 		self.list = [];
+	}
+	
+	this.update_last_notification_id = function() {	
+		$window.localStorage['last_notification_id'] = self.last_notification_id;
+	}
+	
+	function _unshift_groupby(n) {
+		self.last_notification_id = n.id;
+		for(var i=0; i< self.list.length; i++) {
+			var temp_n = self.list[i];
+			if(temp_n.o.id == n.o.id && temp_n.v === n.v) {
+				self.list[i].s = n.s;
+				if(typeof temp_n.s_count !== 'undefined' && temp_n.s_count !== null) {
+					self.list[i].s_count += 1;
+				}
+				
+				return;
+			} 
+		}
+		
+		n.s_count = 0;
+		self.list.unshift(n);
 	}
 	
 	function _notification_list(token) {
@@ -523,8 +625,9 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		var request = $http.jsonp(url);
 		request.success(function(data) {	
 			if(data.retcode === 0) {
+				vlog.info(JSON.stringify(data.list),'service_notification');
 				for( i in data.list) {
-					self.list.push(data.list[i]);					
+					_unshift_groupby(data.list[i]);					
 				}
 			}
 		});
@@ -546,10 +649,13 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		
 		socket.emit('init', token);
 		socket.on('message', function(msg){
-			self.list.push(msg);
+			_unshift_groupby(msg);
+			//self.list.push(msg);
 			$rootScope.$apply();
 		});
 		socket.on('reconnect', function(number){
+			self.list = [];
+			_notification_list(token);
 			socket.emit('init', token);
 		});
 	}
@@ -558,37 +664,115 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		socket.io.close();
 	}
 })
-.service('chatroom', function($rootScope, $http, config){
 
-})
-.service('profile', function($rootScope, $http, config, vlog){
-
-	this.get_profile_header = function($scope, token, id) {
-		var url = config.nex_server_ip+'get_profile_header?callback=JSON_CALLBACK&id='+ id +'&token='+ token;
+/*****************************************************************************
+////////////////////////////////////// "me" //////////////////////////////////
+*****************************************************************************/
+.service('me', function($rootScope, $http, config){
+	var self = this;
+	self.Profile = {};
+	self.list = [];	
+	self.benchmark_id = 0;
+	self.is_init = false;
+	
+	this.get_my_profile_header = function(token, callback) {
+		var url = config.nex_server_ip+'get_my_profile_header?callback=JSON_CALLBACK&token='+ token;
 		var request = $http.jsonp(url);
 		
 		request.success(function(data) {
-			
+			console.log('get_my_profile_header: ' + JSON.stringify(data));
 			if(data.retcode === 0) {
-				$scope.Profile = data.profile;
-				vlog.log('Avatar: ' + JSON.stringify($scope.Profile.avatar));
+				self.Profile = data.profile;
+				callback(true);
 			}
 		});
 	}
 	
-	this.get_profile_post_list = function($scope, token, id) {
-		var url = config.nex_server_ip+'get_profile_post_list?callback=JSON_CALLBACK&id='+ id +'&token='+ token;
+	this.get_my_post_list = function(token, callback) {
+		var url = config.nex_server_ip+'get_my_post_list?callback=JSON_CALLBACK&from_id='+ self.benchmark_id +'&token='+ token;
 		var request = $http.jsonp(url);
+		if(!self.is_init) {
+			self.is_init = true;
+		}
 		
 		request.success(function(data) {
+			console.log('get_my_post_list' + JSON.stringify(data));
 			if(data.retcode === 0) {
 				for (var i in data.post_list) {
-					$scope.ProfilePostList.unshift(data.post_list[i]);			  
+					self.list.unshift(data.post_list[i]);			  
+				}
+			
+				if(data.post_list.length < 3) {
+					self.benchmark_id = -1;
+					callback(false);
+				} else {				
+					self.benchmark_id = data.post_list[data.post_list.length - 1].id;
+					callback(true);
 				}
 			}
 		});
 	}
+	
+	/***  private functions ***/ 
+	function _serialize(obj) {
+		var str = [];
+		for(var p in obj){
+			if (Array.isArray( obj[p])) {
+				for(var i in obj[p])
+					str.push(encodeURIComponent(p) + '[]=' + encodeURIComponent(obj[p][i]));
+			} else {
+				str.push(encodeURIComponent(p) + '=' + encodeURIComponent(obj[p]));
+			}
+		}
+		return str.join('&');
+	}
+	
+	this.change_my_basic_nickname = function(token, name, callback) {
+		var url = (!config.is_device) ? '/change_my_basic_nickname' : config.nex_server_ip + 'change_my_basic_nickname';
+		$http({
+			  method  : 'POST',
+			  url     : url,
+			  data    : _serialize({ Token: token, nickname : name}),  // pass in data as strings	
+			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
+			 }).success(function(data) {
+				callback(data);
+			});
+	}
+	
+	this.change_my_basic_fullname = function(token, name, callback) {
+		var url = (!config.is_device) ? '/change_my_basic_fullname' : config.nex_server_ip + 'change_my_basic_fullname';
+		$http({
+			  method  : 'POST',
+			  url     : url,
+			  data    : _serialize({ Token: token, fullname : name}),  // pass in data as strings	
+			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
+			 }).success(function(data) {
+				callback(data);
+			});
+	}
+	
 })
-.service('me', function($rootScope, $http, config){
 
+
+/*****************************************************************************
+///////////////////////////////// "profile" //////////////////////////////////
+*****************************************************************************/
+.service('profile', function($rootScope, $http, config, vlog){
+	this.get_profile_header = function(token, id, callback) {
+		var url = config.nex_server_ip+'get_profile_header?callback=JSON_CALLBACK&id='+ id +'&token='+ token;
+		var request = $http.jsonp(url);
+		
+		request.success(function(data) {
+			callback(data);
+		});
+	}
+	
+	this.get_profile_post_list = function(token, id, benchmark_id, callback) {
+		var url = config.nex_server_ip+'get_profile_post_list?callback=JSON_CALLBACK&from_id='+ benchmark_id +'&id='+ id +'&token='+ token;
+		var request = $http.jsonp(url);
+		
+		request.success(function(data) {
+			callback(data);
+		});
+	}
 });

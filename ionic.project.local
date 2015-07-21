@@ -23,6 +23,10 @@
       "proxyUrl": "http://localhost:5000/create_post_comment"
     },
 	{
+      "path": "/create_question_answer",
+      "proxyUrl": "http://localhost:5000/create_question_answer"
+    },
+	{
       "path": "/create_post_relay",
       "proxyUrl": "http://localhost:5000/create_post_relay"
     },
@@ -37,6 +41,18 @@
 	{
       "path": "/signup_basic_fullname",
       "proxyUrl": "http://localhost:5000/signup_basic_fullname"
+    },
+	{
+      "path": "/change_my_basic_nickname",
+      "proxyUrl": "http://localhost:5000/change_my_basic_nickname"
+    },
+	{
+      "path": "/change_my_basic_fullname",
+      "proxyUrl": "http://localhost:5000/change_my_basic_fullname"
+    },
+	{
+      "path": "/change_my_password",
+      "proxyUrl": "http://localhost:5000/change_my_password"
     }
   ]
 }

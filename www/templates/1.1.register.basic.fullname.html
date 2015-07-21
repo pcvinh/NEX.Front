@@ -1,9 +1,8 @@
-<ion-view view-title="Sign-In">
-<ion-header-bar class="bar-secondary">
+<ion-view view-title="Sign-In"  id="login-body">
+<!--ion-header-bar class="bar-secondary">
 	<h1 class="title">Register - Full Name</h1>
-	<!--button class="button button-clear button-positive" ng-click="_click_closeAddFavouriteModal()">Skip  </button-->
-</ion-header-bar>
-<ion-content>
+</ion-header-bar-->
+<!--ion-content>
 	<label class="item item-input">
 		<i class="icon ion-person placeholder-icon"></i>
 		<input type="text" placeholder="Full Name" ng-model="fullname">
@@ -17,5 +16,14 @@
 		  <a href="#/register_basic_avatar/{{userId}}">Next >></a><span class="fontawesome-arrow-right"></span>
 		</p>
 	</div>
-</ion-content>
+</ion-content-->
+<div class="container">
+   <div id="login">
+      <form action="javascript:void(0);" method="get">
+         <p><span class="icon ion-person"></span>
+         <input type="text" placeholder="Full Name" ng-model="fullname">
+         <input type="submit" value="Submit" ng-click="register_basic(fullname)"></p>
+      </form>
+   </div>
+</div>
 </ion-view>

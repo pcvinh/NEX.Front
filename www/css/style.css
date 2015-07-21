@@ -125,7 +125,7 @@ p {
   height: 50px;
 }
 
-#login form input[type="text"], input[type="password"] {
+#login form input[type="text"], #login form  input[type="password"] {
   background-color: #3b4148;
   border-radius: 0px 1px 1px 0px;
   color: #606468;
@@ -134,7 +134,7 @@ p {
   width: 230px;
 }
 
-#login form input[type="text"]::-webkit-input-placeholder, input[type="password"]::-webkit-input-placeholder {
+#login form input[type="text"]::-webkit-input-placeholder, #login form  input[type="password"]::-webkit-input-placeholder {
    color: #303030;
 }
 
@@ -174,42 +174,65 @@ body
 {
     font-family: 'Open Sans', sans-serif;
 }
+.fb-profile {
+	position: relative;
+}
 
 .fb-profile img.fb-image-lg{
     z-index: 0;
     width: 100%; 
-	height: 100px;
+	height: 70px;
     margin-bottom: 10px;
+	background-color: #112244;
+}
+
+
+.fb-profile-text
+{
+	left: 110px;
+	position: relative;
+}
+
+.fb-profile-text>h1{
+    font-weight: 600;
+    font-size:16px;
+	color:#333;
 }
 
 .fb-image-profile
 {
-    margin: -30px 10px 0px 10px;
+	position: absolute;
+    left: 10px;
+    top: 10px;
     z-index: 9;
     width: 90px; 
+	box-shadow: 1px 1px 1px #777;
+	border:3px solid white;
+	background-color: #eee;
 }
 
-.fb-profile-text>h1{
-    font-weight: 500;
-    font-size:16px;
-}
-
-.fb-profile-content
+.me-settings-image-profile
 {
-    margin-top: 170px;
-}
-
-
-@media (max-width:768px){
-.fb-profile-text>h1{
-    font-weight: 500;
-    font-size:16px;
-}
-
-.fb-image-profile
-{
-    margin: -30px 10px 0px 10px;
+	position: absolute;
+    left: 10px;
+    top: 10px;
     z-index: 9;
     width: 90px; 
+	box-shadow: 1px 1px 1px #777;
+	border:3px solid white;
+	background-color: #eee;
 }
+
+/******* effect to smooth delete item from list *******/
+
+.hide-it {
+      opacity:0;
+  transition:opacity 300ms linear;*
+}
+/******* effect to smooth delete item from list *******/
+.like-click-true {
+	color:blue;
+}
+.relay-click-true {
+	color:green;
 }

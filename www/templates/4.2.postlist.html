@@ -1,0 +1,30 @@
+<ion-view title="My Activities">
+    <ion-nav-bar class="bar-dark nav-title-slide-ios7">
+		<ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
+			Back
+		</ion-nav-back-button>
+    </ion-nav-bar>
+	<ion-content class="">
+		<ion-list>
+		<div class="list card" ng-repeat="myitem in PostList | orderBy : '-id'">
+			<div class="item">
+				<span style="color: #777;font-size:small">{{ myitem.type === 0 ? 'Created post' : 'Asked a question' }}</span>
+				<i class="icon ion-chatboxes" ng-show="(myitem.type===1)"></i>
+				<small> on </small><trim-datetime create-datetime="myitem.metadata.create_time" ></trim-datetime>
+				<a class="item-icon-right" ng-click="showActionsheet(myitem.id)"><i class="icon ion-chevron-down" style="font-size:small"></i></a>
+			</div>
+			<div class="item item-body" style="padding-top: 0px;border-top-style: none;">
+				<content-trim id='myitem.id' tab='tab' content='myitem.content'></content-trim>
+				<interactive-count myitem="myitem" ></interactive-count>
+			</div>
+			<interactive-tabs myitem="myitem" isme="true" on-like="clickLike(myitem)" on-comment="clickComment(myitem)" on-relay="clickRelay(myitem)"></interactive-tabs>
+		</div>
+		
+		<ion-infinite-scroll ng-if="is_show_infinite_scroll"
+		on-infinite="load_more_post()"
+		icon="ion-loading-c"
+		distance="1%"></ion-infinite-scroll>
+		</ion-list>
+	</ion-content>
+</ion-view>
+

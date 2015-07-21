@@ -1,0 +1,37 @@
+<ion-view title="Notify">
+    <ion-nav-bar class="bar-dark nav-title-slide-ios7">
+      <ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
+        Back
+      </ion-nav-back-button>
+    </ion-nav-bar>
+	
+  <ion-content class="has-header">
+      <ion-list>
+        <!--div ng-repeat="group in groups">
+          <ion-item class="item-stable"
+                    ng-click="toggleGroup(group)"
+                    ng-class="{active: isGroupShown(group)}">
+              <i class="icon" ng-class="isGroupShown(group) ? 'ion-minus' : 'ion-plus'"></i>
+            &nbsp;
+            Group {{group.name}}
+          </ion-item>
+          
+			<ion-item class="item-accordion item-avatar" href="#" ng-repeat="item in group.items"
+                    ng-show="isGroupShown(group)" notify-item-type="{{group.type}}">
+			</ion-item>
+        </div-->
+	  <ion-item class="item-avatar wrap" ng-repeat="item in list" href="#/tab/notify/detail/{{item.o.id}}">
+		<img ng-if="item.s.avatar===null || item.s.avatar===undefined" name="{{item.s.nickname}}" img-initial />
+		<img ng-if="item.s.avatar!==null && item.s.avatar!==undefined" ng-src="{{getAvatarPath(item.s.avatar)}}" />
+		<p style="margin-bottom:0px;text-decoration: none;color: #000; font-weight: 300;white-space: normal;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 2;">
+		<a href="#/tab/notify/profile/{{item.s.id}}" style="text-decoration: none;color: #00005c; font-weight: 600;">{{item.s.nickname}}</a> 
+		<span ng-if="item.s_count > 0"> and {{item.s_count}} others </span>
+		{{item.v}} 
+		<a href="#/tab/notify/detail/{{item.o.id}}" style="text-decoration: none;color: #777; font-weight: bold;">{{item.o.name}}</a>
+		<span ng-if="item.c != null" style="font-style:italic;color: #777;">: "{{item.c}}"</span>
+		
+		</p>
+	  </ion-item>
+      </ion-list>
+  </ion-content>
+</ion-view>

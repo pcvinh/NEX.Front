@@ -1,0 +1,17 @@
+<ion-view view-title="Sign-In"  id="login-body">
+<div class="container">
+   <div id="login">
+      <form action="javascript:void(0);" method="get">
+         <p><span class="icon ion-person"></span>
+            <input type="text" ng-model="user.username" placeholder="Username">
+         </p>
+         <p><span class="icon ion-locked "></span>
+            <input type="password" ng-model="user.password" placeholder="Password">
+         </p>
+         <p><input type="submit" value="Sign In" ng-click="sign_in(user.username, user.password)"></p>
+      </form>
+      <p>Forget password? <a href="#">Click here now</a><span class="fontawesome-arrow-right"></span></p>
+	  <p ng-if="isLoginFalse">Login fail. You may input a wrong email or password.</p>
+   </div>
+</div>
+</ion-view>
