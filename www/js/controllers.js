@@ -129,14 +129,14 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 ///////////////////////////////// Tab Main View //////////////////////////////
 *****************************************************************************/
 .controller('MainCtrl', function($rootScope, $scope, $http, $ionicScrollDelegate,  $location, 
-			$ionicModal, $state, $cordovaGeolocation, $cordovaCamera, $cordovaImagePicker, 
+			$ionicModal, $state, $cordovaCamera, $cordovaImagePicker, 
 			$timeout, $ionicActionSheet, login, main, post, config) {
 			
 	/***  init function  ***/ 
 	$scope.is_show_infinite_scroll = false;	
 	$scope.message = {};
 	$scope.message.Content = '';
-	$scope.photos = [{'img': 'img/avatar.png' , 'title' : 'asd asd as dsadasd', 'filename' : 'XYZasdofjasdfsfaewrf'}];
+	$scope.photos = [];
 	var photos_file = [];
 	var photos_temp = [];
 	
@@ -335,10 +335,10 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			});
 		} else {
 			var photo = photos_temp.pop();
-			post.upload_post_photo(photo, function(data) {
+			post.upload_post_photo(photo, login.token, function(data) {
 				// upload a photo success.
 				photos_file.push(data.file);
-				_create_post();
+				_create_post(message);
 			});
 		}
 	}

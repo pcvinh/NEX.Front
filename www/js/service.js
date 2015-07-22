@@ -1,7 +1,7 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
-	this.is_localhost = true;
-	this.is_device = false;
+	this.is_localhost = false;
+	this.is_device = true;
 	this.nex_server_ip = (this.is_localhost == false) ? 'http://107.167.183.96:5000/' : 'http://127.0.0.1:5000/';
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -73,13 +73,13 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		});
 	}
 	
-	this.upload_post_photo = function(img_uri, callback) {
+	this.upload_post_photo = function(img_uri, token, callback) {
 		var options = {};
 		options.params = {
-			'Token': self.token
+			'Token': token
 		};
 		
-		var url_upload_post_photo = (config.is_localhost) ? '/upload_post_photo' : config.nex_server_ip + 'upload_post_photo';
+		var url_upload_post_photo = config.nex_server_ip + 'upload_post_photo';
 		document.addEventListener('deviceready', function () {
 			$cordovaFileTransfer.upload(url_upload_post_photo, img_uri, options)
 			  .then(function(results) {
@@ -107,7 +107,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		$http({
 			method  : 'POST',
 			url     : url,
-			data    : _serialize({ Channels: current_channel, Title : message.Title, Content: message.Content, photos : photos, Token: token}),  // pass in data as strings	
+			data    : _serialize({ Channels: current_channel, Content: message.Content, photos : photos, Token: token}),  // pass in data as strings	
 			headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 			}).success(function(data) {
 				vlog.info('SUCCESS createPost return: ' + JSON.stringify(data), 'service_post');
@@ -218,7 +218,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 /*****************************************************************************
 ///////////////////////////////// "login" ////////////////////////////////////
 *****************************************************************************/
-.service('login', function($rootScope, $http, $window, $cordovaFileTransfer, $cordovaGeolocation, config, main, notification, vlog){
+.service('login', function($rootScope, $http, $window, $cordovaFileTransfer, config, main, notification, vlog){
 	var self = this;
 	var key = 'nex_token', key_my_id = 'nex_my_id';
 	self.token = null;
@@ -323,8 +323,8 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			'Token': self.token
 		};
 		
-		var url_avatar = (config.is_localhost) ? '/signup_basic_avatar' : config.nex_server_ip + '/signup_basic_avatar';
-        //var url_avatar = 'http://localhost:5000/files1/'+id;
+		var url_avatar = config.nex_server_ip + '/signup_basic_avatar';
+		
 		document.addEventListener('deviceready', function () {
 			$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
 			  .then(function(results) {
@@ -383,7 +383,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 /*****************************************************************************
 ///////////////////////////////// "main" /////////////////////////////////////
 *****************************************************************************/
-.service('main', function($rootScope, $http, PubNub, config, post, vlog){
+.service('main', function($rootScope, $http, $cordovaGeolocation, PubNub, config, post, vlog){
 	var self = this;
 	self.list = [];	
 	self.fav_list = [];
