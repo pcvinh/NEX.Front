@@ -9,7 +9,7 @@
 		<div class="list">
 			<div class="item item-avatar" style="padding-top:6px;padding-bottom:6px;min-height:62px">
 				<img ng-if="myitem.owner.avatar===null" style="top:6px" name="{{myitem.owner.nickname}}" img-initial>
-				<img ng-if="myitem.owner.avatar!==null" ng-src="{{getAvatarPath(myitem.owner.avatar)}}" style="top:6px">
+				<img ng-if="myitem.owner.avatar!==null" ng-src="{{getAvatarPath(myitem.owner.avatar)}}" style="top:6px;width:40px;height:40px">
 				<h2 style="display:inline !important"><a href="#/tab/{{tab}}/profile/{{myitem.owner.id}}" ng-click="$event.stopPropagation()" style="text-decoration: none;color: #222; font-weight: bold;">{{myitem.owner.nickname}}</a></h2>
 				<trim-datetime create-datetime="myitem.metadata.create_time"/>
 			</div>
@@ -21,7 +21,7 @@
 			<div class="list">
 				<div class="item item-avatar" ng-click="openCommentDetailModal(comment)" ng-repeat="comment in comments">
 					<img ng-if="comment.owner.avatar===null || comment.owner.avatar===undefined" name="{{comment.owner.nickname}}" img-initial />
-					<img ng-if="comment.owner.avatar!==null && comment.owner.avatar!==undefined" ng-src="{{getAvatarPath(comment.owner.avatar)}}" />
+					<img ng-if="comment.owner.avatar!==null && comment.owner.avatar!==undefined" ng-src="{{getAvatarPath(comment.owner.avatar)}}" style="width:40px;height:40px"/>
 				  <h2 style="display:inline !important">
 				  <a ng-click="gotoProfile(comment.owner.id); $event.stopPropagation();" style="text-decoration: none;color: #222; font-weight: bold;">{{comment.owner.nickname}}</a></h2>
 				  <trim-datetime create-datetime="comment.metadata.create_time"></trim-datetime>

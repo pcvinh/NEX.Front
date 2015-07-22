@@ -603,9 +603,9 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	
 	$scope.update_profile_basic = function() {
 		if($scope.Profile.nickname != me.Profile.nickname) {
-			me.change_my_basic_nickname(login.token, $scope.Profile.nickname, function(data) {
+			login.change_my_basic_nickname(login.token, $scope.Profile.nickname, function(data) {
 				if ($scope.Profile.fullname != me.Profile.fullname) {
-					me.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
+					login.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
 						console.log("update_profile_basic finish change_my_basic_nickname");
 						$scope.is_change_update = false;
 					}); 
@@ -615,7 +615,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				}
 			});
 		} else if ($scope.Profile.fullname != me.Profile.fullname) {
-			me.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
+			login.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
 				console.log("update_profile_basic finish change_my_basic_nickname");
 				$scope.is_change_update = false;
 			}); 

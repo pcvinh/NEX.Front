@@ -22,7 +22,7 @@
         </div-->
 	  <ion-item class="item-avatar wrap" ng-repeat="item in list" href="#/tab/notify/detail/{{item.o.id}}">
 		<img ng-if="item.s.avatar===null || item.s.avatar===undefined" name="{{item.s.nickname}}" img-initial />
-		<img ng-if="item.s.avatar!==null && item.s.avatar!==undefined" ng-src="{{getAvatarPath(item.s.avatar)}}" />
+		<img ng-if="item.s.avatar!==null && item.s.avatar!==undefined" ng-src="{{getAvatarPath(item.s.avatar)}}" style="width:40px;height:40px"/>
 		<p style="margin-bottom:0px;text-decoration: none;color: #000; font-weight: 300;white-space: normal;display: -webkit-box;-webkit-box-orient: vertical;-webkit-line-clamp: 2;">
 		<a href="#/tab/notify/profile/{{item.s.id}}" style="text-decoration: none;color: #00005c; font-weight: 600;">{{item.s.nickname}}</a> 
 		<span ng-if="item.s_count > 0"> and {{item.s_count}} others </span>

@@ -26,7 +26,7 @@
 				<div class="list card" ng-repeat="myitem in PostList | orderBy : '-id'">
 				 <div class="item item-avatar" style="padding-top:6px;padding-bottom:6px;min-height:62px">
 					<img ng-if="myitem.owner.avatar===undefined || myitem.owner.avatar===null" style="top:6px" name="{{myitem.owner.nickname}}" img-initial>
-					<img ng-if="myitem.owner.avatar!==undefined && myitem.owner.avatar!==null" ng-src="{{getAvatarPath(myitem.owner.avatar)}}" style="top:6px">
+					<img ng-if="myitem.owner.avatar!==undefined && myitem.owner.avatar!==null" ng-src="{{getAvatarPath(myitem.owner.avatar)}}" style="top:6px;width:40px;height:40px">
 					<h2 style="display:inline !important"><a href="#/tab/main/profile/{{myitem.owner.id}}" style="text-decoration: none;color: #222; font-weight: bold;">{{myitem.owner.nickname}}</a>
 					<span style="color: #777;font-size:small"> {{ myitem.type ===0 ? ' created post ' : ' ask a question '}} </span><i class="icon ion-chatboxes" ng-show="(myitem.type===1)"></i>
 					</h2>

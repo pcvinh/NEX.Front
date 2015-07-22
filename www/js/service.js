@@ -1,7 +1,7 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
-	this.is_localhost = false;
-	this.is_device = true;
+	this.is_localhost = true;
+	this.is_device = false;
 	this.nex_server_ip = (this.is_localhost == false) ? 'http://107.167.183.96:5000/' : 'http://127.0.0.1:5000/';
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -323,7 +323,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			'Token': self.token
 		};
 		
-		var url_avatar = config.nex_server_ip + '/signup_basic_avatar';
+		var url_avatar = config.nex_server_ip + 'signup_basic_avatar';
 		
 		document.addEventListener('deviceready', function () {
 			$cordovaFileTransfer.upload(url_avatar, avatarURI, options)
@@ -332,9 +332,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
                     vlog.log('Success transfer file ' + JSON.stringify(data));
                     if(data.retcode === 0) {
                         $window.localStorage[key] = data.token;
-						$window.localStorage[key_my_id] = data.id;
 						self.token = data.token;
-						self.my_id = data.id;
                         callback(data);
                     }
 			  }, function(err) {
@@ -345,7 +343,31 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		}, false);
 	}
 	
-
+	this.change_my_basic_nickname = function(token, name, callback) {
+		var url = (!config.is_device) ? '/change_my_basic_nickname' : config.nex_server_ip + 'change_my_basic_nickname';
+		$http({
+			  method  : 'POST',
+			  url     : url,
+			  data    : _serialize({ Token: token, nickname : name}),  // pass in data as strings	
+			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
+			 }).success(function(data) {
+				$window.localStorage[key] = data.token;
+				self.token = data.token;
+				callback(data);
+			});
+	}
+	
+	this.change_my_basic_fullname = function(token, name, callback) {
+		var url = (!config.is_device) ? '/change_my_basic_fullname' : config.nex_server_ip + 'change_my_basic_fullname';
+		$http({
+			  method  : 'POST',
+			  url     : url,
+			  data    : _serialize({ Token: token, fullname : name}),  // pass in data as strings	
+			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
+			 }).success(function(data) {
+				callback(data);
+			});
+	}
 		
 	this.init = function(callback) {
 		var url = config.nex_server_ip+'init?callback=JSON_CALLBACK&token='+self.token;
@@ -726,30 +748,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		}
 		return str.join('&');
 	}
-	
-	this.change_my_basic_nickname = function(token, name, callback) {
-		var url = (!config.is_device) ? '/change_my_basic_nickname' : config.nex_server_ip + 'change_my_basic_nickname';
-		$http({
-			  method  : 'POST',
-			  url     : url,
-			  data    : _serialize({ Token: token, nickname : name}),  // pass in data as strings	
-			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-			 }).success(function(data) {
-				callback(data);
-			});
-	}
-	
-	this.change_my_basic_fullname = function(token, name, callback) {
-		var url = (!config.is_device) ? '/change_my_basic_fullname' : config.nex_server_ip + 'change_my_basic_fullname';
-		$http({
-			  method  : 'POST',
-			  url     : url,
-			  data    : _serialize({ Token: token, fullname : name}),  // pass in data as strings	
-			  headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
-			 }).success(function(data) {
-				callback(data);
-			});
-	}
+
 	
 })
 
