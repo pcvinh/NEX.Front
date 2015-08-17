@@ -111,10 +111,8 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			],
 			cancelText: 'Cancel',
 			cancel: function() {
-				console.log('CANCELLED');
 			},
 			buttonClicked: function(index) {
-				console.log('buttonClicked : ' + index);
 				switch (index) {
 					case 0: _choose_image(0); break;
 					case 1: _choose_image(1); break;
@@ -128,17 +126,44 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 /*****************************************************************************
 ///////////////////////////////// Tab Main View //////////////////////////////
 *****************************************************************************/
-.controller('MainCtrl', function($rootScope, $scope, $http, $ionicScrollDelegate,  $location, 
+.controller('MainCtrl', function($rootScope, $scope, $http, $ionicScrollDelegate, $ionicPopup,  $location, 
 			$ionicModal, $state, $cordovaCamera, $cordovaImagePicker, 
 			$timeout, $ionicActionSheet, login, main, post, config) {
 			
 	/***  init function  ***/ 
-	$scope.is_show_infinite_scroll = false;	
+	$scope.is_show_infinite_scroll = false;
 	$scope.message = {};
 	$scope.message.Content = '';
 	$scope.photos = [];
+	$scope.is_radar_change_location = false;
 	var photos_file = [];
 	var photos_temp = [];
+	
+	function _show_reset_radar_confirmPopup() {
+		if(main.is_noticed_change_location == false && main.check_change_location() && main.current_radar === 0) {
+			var confirmPopup = $ionicPopup.confirm({
+				title: 'Reset Radar',
+				template: 'Location changed detected. Do you want to Reset Radar?'
+			});
+			confirmPopup.then(function(res) {
+				if(res) {
+					main.clear_radar();
+					main.clear();
+					main.init_radar_here(login.token, function(){
+						temp = $scope.$on('postlistevent', function() { 
+							$scope.is_show_infinite_scroll = true;
+							$scope.PostList =  main.list;
+							$scope.$apply();
+							temp();
+						});
+					});
+				} else {
+					main.is_noticed_change_location = true;
+				}
+			});
+		}
+	}
+	
 	
 	function init() {
 		if(!login.checklogin()) {
@@ -147,16 +172,21 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			$scope.PostList =  main.list;
 			$scope.FavouriteList = main.fav_list;
 			$scope.myid = login.my_id;
+			$scope.is_radar_change_location = main.is_noticed_change_location;
+			
 			if(!login.is_init) {
-				login.init(function(){				
+				login.init(function(){
 					main.init_radar_here(login.token, function() {											
-						temp = $scope.$on('postlistevent', function() { 
-							console.log('set $scope.is_show_infinite_scroll = true;');
+						var temp = $scope.$on('postlistevent', function() { 
 							$scope.is_show_infinite_scroll = true;
-							
 							temp();
 						});
 					});
+				});
+			} else {
+				_show_reset_radar_confirmPopup();
+				var temp = $scope.$on('appresume', function() { 
+					_show_reset_radar_confirmPopup();
 				});
 			}
 		}
@@ -175,6 +205,8 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		}).then(function(modal) {
 			$scope.create_post_modal = modal;
 		});
+		
+		
 	}
 	
 	///// Utility ////
@@ -193,32 +225,82 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	}
 	
 	$scope.checkTop = function() {
-		console.log($ionicScrollDelegate.getScrollPosition().top);
 	}
 	
 	////////// Left side bar /////////////	
 	$scope.clickRadarHere = function() {
-		main.clear_radar();
-		main.init_radar_here(login.token, function(){
-			temp = $scope.$on('postlistevent', function() { 
-				console.log('set $scope.is_show_infinite_scroll = true;');
-				$scope.is_show_infinite_scroll = true;
-				
-				temp();
-			});
-		});
+		if(main.current_radar != 0) {
+			main.clear_radar();
+			main.clear();
+			if(main.check_change_location()) {
+				var confirmPopup = $ionicPopup.confirm({
+					title: 'Reset Radar',
+					template: 'Location changed detected. Do you want to Reset Radar?'
+				});
+				confirmPopup.then(function(res) {
+					if(res) { // chose to init new location
+						main.init_radar_here(login.token, function(){
+							temp = $scope.$on('postlistevent', function() { 
+								$scope.is_show_infinite_scroll = true;
+								$scope.PostList =  main.list;
+								$scope.$apply();
+								temp();
+							});
+						});
+					} else { // chose to init old location 
+						main.is_noticed_change_location = true;
+						main.init_radar_here(login.token, function(){
+							temp = $scope.$on('postlistevent', function() { 
+								$scope.is_show_infinite_scroll = true;
+								$scope.PostList =  main.list;
+								$scope.$apply();
+								temp();
+							});
+						}, false);
+					}
+				});
+			} else { // still in the old location
+				main.init_radar_here(login.token, function(){
+					temp = $scope.$on('postlistevent', function() { 
+						$scope.is_show_infinite_scroll = true;
+						$scope.PostList =  main.list;
+						$scope.$apply();
+						temp();
+					});
+				}, false);			
+			}
+		} else { // refresh radar here due to change location
+			if(main.is_noticed_change_location) {
+				main.clear_radar();
+				main.clear();
+				main.init_radar_here(login.token, function(){
+					temp = $scope.$on('postlistevent', function() { 
+						$scope.is_show_infinite_scroll = true;
+						$scope.PostList =  main.list;
+						$scope.$apply();
+						temp();
+					});
+				});			
+			} else {
+				console.log("nothing to refresh");
+			}
+		}
+		main.current_radar = 0;
 	}
 
 	$scope.clickRadarFavourite = function(id) {
 		main.clear_radar();
+		main.clear();
+		
 		main.init_radar_fovourite(login.token, id, function(){
 			temp = $scope.$on('postlistevent', function() { 
-				console.log('set $scope.is_show_infinite_scroll = true;');
 				$scope.is_show_infinite_scroll = true;
-				
+				$scope.PostList =  main.list;
+				$scope.$apply();
 				temp();
 			});
 		});
+		main.current_radar = 1;
 	}
 	
 	///////////////// Favourite Modal ////////////
@@ -253,7 +335,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				};
 
 				$cordovaCamera.getPicture(options).then(function(imageURI) {
-					var tmp = {'img': results[i]};
+					var tmp = {'img': imageURI};
 					$scope.photos.push(tmp);
 				}, function(err) {
 				  // error
@@ -273,7 +355,6 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		$cordovaImagePicker.getPictures(options)
 		.then(function (results) {
 			for (var i = 0; i < results.length; i++) {
-				console.log('Image URI: ' + results[i]);
 				var tmp = {'img': results[i]};
 				$scope.photos.push(tmp);
 			}
@@ -282,6 +363,28 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			console.log('Error to get picture from device.');
 		});
 	}
+	function _show_photos_actionSheet() {
+		$ionicActionSheet.show({
+			buttons: [
+				{ text: 'Take Photo' },
+				{ text: 'Choose From Library' }
+			],
+			cancelText: 'Cancel',
+			cancel: function() {
+			},
+			buttonClicked: function(index) {
+				switch (index) {
+					case 0: _take_photo(); break;
+					case 1: _get_photos(); break;
+				} 
+				return true;
+			}
+		});
+	}
+	
+	$scope.showPhotosActionSheet = function() {
+		_show_photos_actionSheet();
+	}
 	
 	$scope.openCreatePostModal = function(title, type) {
 		$scope.pop_up_name = title;
@@ -289,24 +392,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		$scope.create_post_modal.show();
 		
 		if(title === 'Upload Photos Gallery') { // this is default will be upload photos.
-			$ionicActionSheet.show({
-				buttons: [
-					{ text: 'Take Photo' },
-					{ text: 'Choose From Library' }
-				],
-				cancelText: 'Cancel',
-				cancel: function() {
-					console.log('CANCELLED');
-				},
-				buttonClicked: function(index) {
-					console.log('buttonClicked : ' + index);
-					switch (index) {
-						case 0: _take_photo(); break;
-						case 1: _get_photos(); break;
-					} 
-					return true;
-				}
-			});
+			_show_photos_actionSheet();
 		}
 	}
 		
@@ -316,13 +402,13 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	};
 	
 	$scope.deleteItem = function(index) {
-		console.log('deleteItem');
 		$timeout( function() {
 			$scope.photos.splice(index,1);
 		}, 300);
 	}
 	
 	/////////// create_post ////////////
+	var _is_post_progressing = false;
 	function _create_post(message) {
 		if (photos_temp.length == 0) {
 			post.create_post(message, login.token, main.current_channels[0], $scope.type, photos_file, function(data) {
@@ -332,6 +418,9 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				$scope.create_post_modal.hide();
 				photos_file = [];
 				photos_temp = [];
+				
+				NProgress.done();
+				_is_post_progressing = false;
 			});
 		} else {
 			var photo = photos_temp.pop();
@@ -345,9 +434,17 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	
 	$scope.create_post = function(message) {
 		// v-comment: put-up waiting icon... 
+		if(_is_post_progressing){
+			return;
+		}		
+		_is_post_progressing = true;
+		
 		for( var i = 0; i < $scope.photos.length; i++ ) {
 			photos_temp.push($scope.photos[i].img); 
 		}
+		
+		NProgress.start();
+		
 		
 		_create_post(message);
 	}
@@ -356,7 +453,6 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	$scope.clickLike = function(myitem) {
 		if(!myitem.i.my_l)
 		post.create_post_like(myitem.id, login.token, function(data) {
-			console.log(myitem);
 			myitem.i.l += 1;
 			myitem.i.my_l = true;
 			//$scope.$apply();
@@ -378,9 +474,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	};
 	
 	////////////// Infinity Load ///////////
-	$scope.load_more_post = function() {	
-		console.log('load_more_post @ benchmark_id = ' + main.benchmark_id);
-		
+	$scope.load_more_post = function() {
 		main.load_more_post(login.token, function(is_more){
 			if(!is_more)
 				$scope.is_show_infinite_scroll = false;
@@ -496,10 +590,8 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		  destructiveText: 'Delete',
 		  cancelText: 'Cancel',
 		  cancel: function() {
-			console.log('CANCELLED');
 		  },
 		  destructiveButtonClicked: function() {
-			console.log('DESTRUCT ' + i);
 			return true;
 		  }
 		});
@@ -513,7 +605,6 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	$scope.clickLike = function(myitem) {
 		if(!myitem.i.my_l)
 		post.create_post_like(myitem.id, login.token, function(data) {
-			console.log(myitem);
 			myitem.i.l += 1;
 			myitem.i.my_l = true;
 			//$scope.$apply();
@@ -527,11 +618,10 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 })
 
 .controller('me_SettingsCtrl', function($scope, $state, $ionicActionSheet, $cordovaCamera, me, login, config) {
-	$scope.Profile = {nickname : 'hello'};
+	$scope.Profile = {nickname : ''};
 	$scope.is_change_update = false;
 	function init() {
 		me.get_my_profile_header(login.token, function(result) {
-			console.log('me.get_my_profile_header success');
 			$scope.Profile.nickname = me.Profile.nickname;
 			$scope.Profile.fullname = me.Profile.fullname;
 			$scope.Profile.avatar = me.Profile.avatar;				
@@ -569,8 +659,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				  var image = document.getElementById('myImage');
 				  image.src = imageURI;
 				  // upload immediately - call 
-					login.register_basic_avatar(imageURI, function (data) {		
-						console.log("Upload avatar success");
+					login.register_basic_avatar(imageURI, function (data) {	
 					});
 				}, function(err) {
 				  // error
@@ -588,10 +677,8 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			],
 			cancelText: 'Cancel',
 			cancel: function() {
-				console.log('CANCELLED');
 			},
 			buttonClicked: function(index) {
-				console.log('buttonClicked : ' + index);
 				switch (index) {
 					case 0: _choose_image(0); break;
 					case 1: _choose_image(1); break;
@@ -606,21 +693,21 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 			login.change_my_basic_nickname(login.token, $scope.Profile.nickname, function(data) {
 				if ($scope.Profile.fullname != me.Profile.fullname) {
 					login.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
-						console.log("update_profile_basic finish change_my_basic_nickname");
+						//console.log("update_profile_basic finish change_my_basic_nickname");
 						$scope.is_change_update = false;
 					}); 
 				} else {
-					console.log("update_profile_basic finish change_my_basic_fullname");
+					//console.log("update_profile_basic finish change_my_basic_fullname");
 					$scope.is_change_update = false;
 				}
 			});
 		} else if ($scope.Profile.fullname != me.Profile.fullname) {
 			login.change_my_basic_fullname(login.token, $scope.Profile.fullname, function(data) {
-				console.log("update_profile_basic finish change_my_basic_nickname");
+				//console.log("update_profile_basic finish change_my_basic_nickname");
 				$scope.is_change_update = false;
 			}); 
 		} else {
-			console.log("update_profile_basic finish change_my_basic_fullname");
+			//console.log("update_profile_basic finish change_my_basic_fullname");
 			$scope.is_change_update = false;
 		}
 	}
@@ -644,7 +731,6 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	
 	$scope.change_my_password = function() {
 		login.change_my_password(login.token, $scope.Password.old_password, $scope.Password.new_password, function(data) {
-			console.log('change_my_password finish ' + JSON.stringify(data));
 			$scope.Password = {old_password : '', new_password : '', new_password_again : ''};
 		});
 	}
@@ -701,6 +787,10 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		return typeof filename === 'undefined'|| filename === null ? 'img/avatar.png' : config.nex_server_ip + 'avatar/' + filename;
 	}
 	
+	$scope.getPhotosPath = function(owner_id, filename) {
+		return config.nex_server_ip + owner_id + '/' + filename;
+	}
+	
 	$scope.getHeaderTitle = function() {
 		if($scope.myitem.type === 1) return "Answer detail";
 		return "Post detail";
@@ -728,7 +818,6 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 	};
 	
 	$scope.submitComment = function(comment) { // this is to submit comment
-		console.log('$scope.myitem.type' + $scope.myitem.type);
 		if($scope.myitem.type === 0) {
 			post.create_post_comment($stateParams.detailId, comment, login.token, function(data) {
 				if(data.retcode === 0) {
@@ -785,9 +874,10 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 		$state.go('signin');
 	} else {
 		$scope.Profile = {};
+		$scope.Profile.nickname = "";
+		$scope.Profile.fullname = "";
 		$scope.ProfilePostList =  [];
 		
-		console.log('$state.$current.name === ' + $state.$current.name);
 		if($state.$current.name === 'tab.m_profile') {
 			$scope.tab = 'main';
 		} else if($state.$current.name === 'tab.n_profile') {

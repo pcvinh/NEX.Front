@@ -1,7 +1,7 @@
 angular.module('nexengine.services', ['pubnub.angular.service'])
 .service('config', function(){
-	this.is_localhost = true;
-	this.is_device = false;
+	this.is_localhost = false;
+	this.is_device = true;
 	this.nex_server_ip = (this.is_localhost == false) ? 'http://107.167.183.96:5000/' : 'http://127.0.0.1:5000/';
 	this.nex_api = {}; // backend API for NEX
 	this.nex_current = {};// will be store in local storage if app suddenly exit.
@@ -39,11 +39,26 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		console.log('[ERROR]' + err);
 	}
 })
-
+.service('pubsub', function($rootScope, PubNub){
+	this.subcribe = function(channels, callback) {
+		PubNub.ngSubscribe({ channel: channels });
+		$rootScope.$on(PubNub.ngMsgEv(channels), function(ngEvent, payload) {
+			callback(payload);
+		});
+	}
+	
+	this.unsubscribe = function(channels) {
+		PubNub.ngUnsubscribe({
+			channel : channels, 
+			callback : function(){vlog.log('xong')},
+			http_sync : false
+		});
+	}
+})
 /*****************************************************************************
 ///////////////////////////////// "post" /////////////////////////////////////
 *****************************************************************************/
-.service('post', function($rootScope, $http, $cordovaFileTransfer, config, vlog){
+.service('post', function($rootScope, $http, $cordovaFileTransfer, me, config, vlog){
 	/***  private functions ***/ 
 	function _serialize(obj) {
 		var str = [];
@@ -111,6 +126,20 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			headers : { 'Content-Type': 'application/x-www-form-urlencoded' }
 			}).success(function(data) {
 				vlog.info('SUCCESS createPost return: ' + JSON.stringify(data), 'service_post');
+				// insert to me.my_post_list
+				var post = {'new' : true};
+				post.type = post_type === null? 0 : post_type;
+				post.id = data.id;
+				post.content = message.Content;
+				post.metadata = {};
+				post.metadata.create_time = Date().toString();
+				post.i = {};
+				post.i.l = 0;
+				post.i.c = 0;
+				post.i.r = 0;
+				post.i.my_l = false;
+				me.add_to_my_post_list(post);
+
 				callback(data);
 			});
 	}
@@ -203,7 +232,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				request = $http.jsonp(url);	
 				request.success(function(data1) {
 					if(data1.retcode === 0) {
-						vlog.info('SUCCESS init_post_detail return: ' + JSON.stringify(data1), 'service_post');						
+						vlog.info('SUCCESS init_post_detail return: ' + JSON.stringify(data) + '\n' + JSON.stringify(data1), 'service_post');						
 						var comments = data1.comments;
 						
 						callback(myitem, comments);
@@ -218,7 +247,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 /*****************************************************************************
 ///////////////////////////////// "login" ////////////////////////////////////
 *****************************************************************************/
-.service('login', function($rootScope, $http, $window, $cordovaFileTransfer, config, main, notification, vlog){
+.service('login', function($rootScope, $http, $window, $interval, $cordovaFileTransfer, config, main, notification, vlog){
 	var self = this;
 	var key = 'nex_token', key_my_id = 'nex_my_id';
 	self.token = null;
@@ -368,7 +397,40 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				callback(data);
 			});
 	}
-		
+	
+	function onPause() {
+		// Handle the pause event
+		_stop_watchPosition();
+	}
+	
+	function onResume() {
+		setTimeout(function() {
+		// Handle the resume event
+			main.update_new_location();
+			$rootScope.$broadcast('appresume');
+			_start_watchPosition();
+		}, 0);
+	}
+	
+	var watchPosition;
+	function _stop_watchPosition() {
+		if (angular.isDefined(watchPosition)) {
+			$interval.cancel(watchPosition);
+			watchPosition = undefined;
+		}
+	}
+	
+	function _start_watchPosition() {
+		if ( !angular.isDefined(watchPosition) ) {
+			watchPosition = $interval(function() {
+				main.update_new_location();
+				if(main.check_change_location()) {
+					main.is_noticed_change_location = true;
+				}
+			}, 5*60*1000);
+		}
+	}
+	
 	this.init = function(callback) {
 		var url = config.nex_server_ip+'init?callback=JSON_CALLBACK&token='+self.token;
 		var request = $http.jsonp(url);		
@@ -381,10 +443,15 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				
 				// --> radar - default is radar_here
 				//main.init_radar_here(self.token);
+				if(config.is_device) {
+					document.addEventListener("pause", onPause, false);
+					document.addEventListener("resume", onResume, false);
+				}
 				
 				// init notification module
 				notification.init(self.token);
 				
+				_start_watchPosition();
 				callback();
 			}
 		});
@@ -405,12 +472,29 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 /*****************************************************************************
 ///////////////////////////////// "main" /////////////////////////////////////
 *****************************************************************************/
-.service('main', function($rootScope, $http, $cordovaGeolocation, PubNub, config, post, vlog){
+.service('main', function($rootScope, $http, $cordovaGeolocation, pubsub, config, post, vlog){
 	var self = this;
 	self.list = [];	
 	self.fav_list = [];
 	self.current_channels = [];
 	self.benchmark_id = 0;
+	self.is_noticed_change_location = false;
+	self.current_radar = 0; // 0: here, 1: favourite, 2: campaign
+	
+	var myLatlng, myNewLatlng;
+	
+	this.check_change_location = function() {
+		if(_distance(myLatlng, myNewLatlng) > 200) { // moved 200m
+			return true;
+		}
+		return false;
+	}	
+		
+	this.update_new_location = function() {
+		_get_location(function(lat, lng){
+			myNewLatlng = new google.maps.LatLng(lat, lng);
+		});
+	}
 	
 	this.clear = function() {
 		self.list = [];	
@@ -477,15 +561,16 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 
 	
 	this.clear_radar = function(radar_callback) {
-		PubNub.ngUnsubscribe({
+		/*PubNub.ngUnsubscribe({
 			channel : self.current_channels, 
 			callback : function(){vlog.log('xong')},
 			http_sync : false
-		});
+		});*/
+		pubsub.unsubscribe(self.current_channels);
 	}
 	
 	//this.get_latest_post_list = get_latest_post_list;
-	var myLatlng;
+
 	function _distance(X, Y) { 
 		return google.maps.geometry.spherical.computeDistanceBetween(X, Y);
 	}    
@@ -503,7 +588,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		return 1;
 	  return 0;
 	}
-		
+	
 	function _get_location(callback) {
 		if(config.is_device) {
 			var posOptions = {timeout: 10000, enableHighAccuracy: false};
@@ -517,7 +602,8 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			  // error
 			});
 		} else {
-			var lat = 1.3014259, lng = 103.839855;
+			var lat = 1.2928652, lng = 103.7920582; // office
+			//var lat = 1.3455674, lng = 103.7333849; // home
 			callback(lat,lng);
 		}
 	}
@@ -533,36 +619,52 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		}
 	}
 	
-	this.init_radar_here = function(token, callback) {	// here
-		_get_location(function(lat, lng) { // first get the lat & lng
-			var url = config.nex_server_ip+'init_radar_here?callback=JSON_CALLBACK'+'&token='+token+'&lng='+lng+'&lat='+lat;
-			var request = $http.jsonp(url);	
-			myLatlng = new google.maps.LatLng(lat, lng);
+	function _init_radar_here(lat, lng, token, callback) { // first get the lat & lng
+		var url = config.nex_server_ip+'init_radar_here?callback=JSON_CALLBACK'+'&token='+token+'&lng='+lng+'&lat='+lat;
+		var request = $http.jsonp(url);	
+		myLatlng = new google.maps.LatLng(lat, lng);
+		myNewLatlng = new google.maps.LatLng(lat, lng);
+		self.is_noticed_change_location = false;
+		
+		request.success(function(data) {
+			data.results.sort(_compare);
 			
-			request.success(function(data) {
-				data.results.sort(_compare);
-				
-				var len = data.results.length;
-				var MAX_CHANNEL_NUMBER = 20;
-				var i = 0;
+			var len = data.results.length;
+			var MAX_CHANNEL_NUMBER = 20;
+			var i = 0;
 
-				while(i < len && i < MAX_CHANNEL_NUMBER) {
-					self.current_channels.push(data.results[i].place_id);
-					i++;
-				}
-				
-				post.get_latest_post_list(token, self.current_channels, 0, function(message) {
-					_updatePostList(message, false);
-				});
-				
-				PubNub.ngSubscribe({ channel: self.current_channels });
-				$rootScope.$on(PubNub.ngMsgEv(self.current_channels), function(ngEvent, payload) {
-					_updatePostList(payload.message, true);
-				});
-				
-				callback();
+			while(i < len && i < MAX_CHANNEL_NUMBER) {
+				self.current_channels.push(data.results[i].place_id);
+				i++;
+			}
+			
+			post.get_latest_post_list(token, self.current_channels, 0, function(message) {
+				_updatePostList(message, false);
 			});
-		});		
+			
+			/*PubNub.ngSubscribe({ channel: self.current_channels });
+			$rootScope.$on(PubNub.ngMsgEv(self.current_channels), function(ngEvent, payload) {
+				_updatePostList(payload.message, true);
+			});*/
+			pubsub.subcribe(self.current_channels, function(payload){
+				_updatePostList(payload.message, true);
+			});
+			
+			callback();
+		});
+	}
+	
+	this.init_radar_here = function(token, callback, is_new) {	// here
+		if(typeof is_new == 'undefined') {
+			is_new = true;
+		}
+		if(is_new) {
+			_get_location(function(lat, lng) { // first get the lat & lng
+				_init_radar_here(lat, lng, token, callback);
+			});	
+		} else { // get the current location.
+			_init_radar_here(myLatlng.lat(), myLatlng.lng(), token, callback);
+		}
 	}
 
 	this.init_radar_fovourite = function(token, id, callback) {	// favourite
@@ -571,9 +673,13 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		 
 		request.success(function(data) {
 			var my_channel = data.channels;
-			PubNub.ngSubscribe({ channel: my_channel });
+			/*PubNub.ngSubscribe({ channel: my_channel });
 			$rootScope.$on(PubNub.ngMsgEv(my_channel), function(ngEvent, payload) {
 					_updatePostList(payload.message, true);
+			});*/
+			
+			pubsub.subcribe(self.current_channels, function(payload){
+				_updatePostList(payload.message, true);
 			});
 			
 			callback();
@@ -649,7 +755,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			if(data.retcode === 0) {
 				vlog.info(JSON.stringify(data.list),'service_notification');
 				for( i in data.list) {
-					_unshift_groupby(data.list[i]);					
+					_unshift_groupby(data.list[i]);
 				}
 			}
 		});
@@ -702,7 +808,6 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		var request = $http.jsonp(url);
 		
 		request.success(function(data) {
-			console.log('get_my_profile_header: ' + JSON.stringify(data));
 			if(data.retcode === 0) {
 				self.Profile = data.profile;
 				callback(true);
@@ -718,7 +823,6 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		}
 		
 		request.success(function(data) {
-			console.log('get_my_post_list' + JSON.stringify(data));
 			if(data.retcode === 0) {
 				for (var i in data.post_list) {
 					self.list.unshift(data.post_list[i]);			  
@@ -733,6 +837,10 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 				}
 			}
 		});
+	}
+	
+	this.add_to_my_post_list = function(post) {
+		self.list.push(post);
 	}
 	
 	/***  private functions ***/ 

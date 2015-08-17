@@ -24,7 +24,12 @@
 	<!--script src="lib/ionic.headerShrink.js"></script-->
 	<script src="lib/owl.carousel.min.js"></script>
 	<script src="lib/initial.min.js"></script>
-	
+	<script data-pace-options='{ "ajax": false }' src="lib/nprogress/nprogress.js"></script>
+	<link href="lib/nprogress/nprogress.css" rel="stylesheet" />
+	<script data-pace-options='{ "elements": false, "document" : false, "eventLag" : false, "ajax" : false }' src="lib/pace/pace.js"></script>
+	<link href="lib/pace/pace.css" rel="stylesheet" />
+	<!--link rel='stylesheet' href='//cdnjs.cloudflare.com/ajax/libs/angular-loading-bar/0.7.1/loading-bar.min.css' type='text/css' media='all' />
+	<script type='text/javascript' src='//cdnjs.cloudflare.com/ajax/libs/angular-loading-bar/0.7.1/loading-bar.min.js'></script-->
 	
 	<script src="lib/pubnub/pubnub-angular.js"></script>
     <!-- cordova script (this will be a 404 during development) -->
@@ -47,8 +52,7 @@
 
   </head>
   <body ng-app="NEX" animation="slide-left-right-ios7">
-
-    <!--ion-nav-bar class="bar-stable nav-title-slide-ios7">
+	<!--ion-nav-bar class="bar-stable nav-title-slide-ios7">
       <ion-nav-back-button class="button-icon icon  ion-ios7-arrow-back">
         Back
       </ion-nav-back-button>

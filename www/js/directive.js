@@ -131,7 +131,10 @@ angular.module('nexengine.directives', [])
     };
 })
 
-/////////////  plugin from 3rd party ///////////////////////
+/****************************************************
+			plugin from 3rd party 
+*****************************************************/
+
 .directive("autoGrow", ['$window', function($window){
     return {
         link: function (scope, element, attr, $window) {
@@ -222,6 +225,7 @@ angular.module('nexengine.directives', [])
 			scope.initCarousel = function(element) {
 			  // provide any default options you want
 				var defaultOptions = {
+					singleItem:true
 				};
 				var customOptions = scope.$eval($(element).attr('data-options'));
 				// combine the two options objects

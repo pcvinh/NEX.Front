@@ -15,6 +15,11 @@
 			</div>
 			<div class="item item-body" style="padding-top: 0px;border-top-style: none;">
 				{{myitem.content}}
+				<br><br>
+				<!--owl-carousel>
+				<img class="full-image" ng-src="{{getPhotosPath(myitem.owner.id,photo)}}" ng-repeat="photo in myitem.photos" owl-carousel-item>
+				</owl-carousel-->
+				<img class="full-image" ng-src="{{getPhotosPath(myitem.owner.id,photo)}}" ng-repeat="photo in myitem.photos">
 				<interactive-count myitem="myitem" ></interactive-count>
 			</div>
 			<interactive-tabs myitem="myitem" myid="myid" on-like="clickLike(myitem)" on-comment="clickComment(myitem)" on-relay="clickRelay(myitem)"></interactive-tabs>

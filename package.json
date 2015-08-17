@@ -17,6 +17,8 @@
   "cordovaPlugins": [
     "https://github.com/wymsee/cordova-imagePicker.git",
     "https://git-wip-us.apache.org/repos/asf/cordova-plugin-camera.git",
-    "https://git-wip-us.apache.org/repos/asf/cordova-plugin-geolocation.git"
+    "https://git-wip-us.apache.org/repos/asf/cordova-plugin-geolocation.git",
+    "https://github.com/apache/cordova-plugin-file.git",
+    "https://github.com/apache/cordova-plugin-file-transfer.git"
   ]
 }

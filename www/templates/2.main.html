@@ -54,6 +54,9 @@
 			  <a class="item item-icon-left" ng-click="clickRadarHere()" menu-close>
 				<i class="icon ion-navigate"></i>
 				Here&Now
+				<span class="item-note" ng-if="is_radar_change_location">
+				  Location updated!
+				</span>
 			  </a>
 			  <div class="item item-divider item item-icon-right">
 				Favourite
@@ -101,7 +104,7 @@
   <ion-modal-view>
 	 <ion-header-bar class="bar-secondary">
 		  <h1 class="title">{{pop_up_name}}</h1>
-		  <button class="button button-clear button-positive" ng-click="closeCreatePostModal()">Cancel</button>
+		  <button class="button button-clear button-positive" ng-click="closeCreatePostModal()">Close</button>
 	</ion-header-bar>
 	
     <ion-content>
@@ -132,9 +135,9 @@
     </ion-content>
 	<ion-footer-bar keyboard-attach align-title="right" class="bar-light item-input-inset" >
 
-			<a class="button button-icon icon ion-camera" ng-click=""></a>
-			<a ng-if="type===1" class="button button-icon icon ion-cash" ng-click=""></a>
-			<a class="button button-icon icon ion-cash" ng-click="" style="visibility: hidden"></a>
+			<a class="button button-icon icon ion-camera" ng-click="showPhotosActionSheet()"></a>
+			<!--a ng-if="type===1" class="button button-icon icon ion-cash" ng-click=""></a>
+			<a class="button button-icon icon ion-cash" ng-click="" style="visibility: hidden"></a-->
 			
 	</ion-footer-bar>
 
