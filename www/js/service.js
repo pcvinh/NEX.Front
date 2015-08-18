@@ -39,7 +39,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		console.log('[ERROR]' + err);
 	}
 })
-.service('pubsub', function($rootScope, PubNub){
+.service('pubsub', function($rootScope, PubNub, vlog){
 	this.subcribe = function(channels, callback) {
 		PubNub.ngSubscribe({ channel: channels });
 		$rootScope.$on(PubNub.ngMsgEv(channels), function(ngEvent, payload) {
@@ -407,8 +407,8 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		setTimeout(function() {
 		// Handle the resume event
 			main.update_new_location();
-			$rootScope.$broadcast('appresume');
 			_start_watchPosition();
+			$rootScope.$broadcast('appresume');
 		}, 0);
 	}
 	
@@ -485,13 +485,16 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	
 	this.check_change_location = function() {
 		if(_distance(myLatlng, myNewLatlng) > 200) { // moved 200m
+			vlog.info('check_change_location = true', 'service_main');
 			return true;
 		}
+		vlog.info('check_change_location = false', 'service_main');
 		return false;
 	}	
 		
 	this.update_new_location = function() {
 		_get_location(function(lat, lng){
+			vlog.info('update_new_location = ('+lat+','+lng+')', 'service_main');
 			myNewLatlng = new google.maps.LatLng(lat, lng);
 		});
 	}
@@ -510,7 +513,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 	}
 	
 	function _updatePostList(text, is_update) {
-        vlog.log('_updatePostList' + JSON.stringify(text));
+        vlog.info('_updatePostList' + JSON.stringify(text) + ' is_update = ' + is_update, 'service_main');
 		if(Array.isArray(text)){
 			for (var i in text) {
 				//for(var j in self.list) {
@@ -599,7 +602,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 			  var lng = position.coords.longitude
 			  callback(lat,lng);
 			}, function(err) {
-			  // error
+			  vlog.log(err)
 			});
 		} else {
 			var lat = 1.2928652, lng = 103.7920582; // office
@@ -658,6 +661,7 @@ angular.module('nexengine.services', ['pubnub.angular.service'])
 		if(typeof is_new == 'undefined') {
 			is_new = true;
 		}
+		vlog.info('init_radar_here is_new = ' + is_new, 'service_main');
 		if(is_new) {
 			_get_location(function(lat, lng) { // first get the lat & lng
 				_init_radar_here(lat, lng, token, callback);

@@ -255,7 +255,6 @@ angular.module('nexengine.directives', [])
 		restrict: 'A',
 		transclude: false,
 		link: function(scope, element, attrs) {
-			console.log(attrs.ngSrc + "," +attrs.name);
 			$(element).initial({name:attrs.name});
 		}
 	};

@@ -127,7 +127,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 ///////////////////////////////// Tab Main View //////////////////////////////
 *****************************************************************************/
 .controller('MainCtrl', function($rootScope, $scope, $http, $ionicScrollDelegate, $ionicPopup,  $location, 
-			$ionicModal, $state, $cordovaCamera, $cordovaImagePicker, 
+			$ionicModal, $state, $cordovaCamera, $cordovaImagePicker,
 			$timeout, $ionicActionSheet, login, main, post, config) {
 			
 	/***  init function  ***/ 
@@ -159,6 +159,7 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 					});
 				} else {
 					main.is_noticed_change_location = true;
+					$scope.$apply();
 				}
 			});
 		}
@@ -185,10 +186,13 @@ angular.module('nexengine.controllers', ['pubnub.angular.service', 'nexengine.se
 				});
 			} else {
 				_show_reset_radar_confirmPopup();
-				var temp = $scope.$on('appresume', function() { 
-					_show_reset_radar_confirmPopup();
-				});
 			}
+
+			$scope.$on('appresume', function() { 
+				console.log("get appresume notify from service login - hence show popup");
+				_show_reset_radar_confirmPopup();
+			});
+			
 		}
 		
 		///// define modal pop-up ////// 
